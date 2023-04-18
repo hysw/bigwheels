@@ -25,6 +25,147 @@
 namespace ppx {
 
 // -------------------------------------------------------------------------------------------------
+// Implement RenderPass for Swapchain
+
+namespace {
+
+class RenderPassImpl
+{
+public:
+    Result GetRenderPass(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, grfx::RenderPass** ppRenderPass) const;
+    Result UpdateRenderPass(Swapchain* swapchain);
+    void   Cleanup();
+    ~RenderPassImpl();
+
+private:
+    std::vector<grfx::RenderPassPtr> mClearRenderPasses;
+    std::vector<grfx::RenderPassPtr> mLoadRenderPasses;
+
+    grfx::Device* device = nullptr;
+};
+
+template <typename T>
+class WithRenderPass : public T
+{
+public:
+    using T::GetRenderPass;
+    using T::T;
+    Result GetRenderPass(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, grfx::RenderPass** ppRenderPass) const final
+    {
+        return mRenderPass.GetRenderPass(imageIndex, loadOp, ppRenderPass);
+    }
+
+protected:
+    Result OnUpdate() override
+    {
+        Result ppxres = mRenderPass.UpdateRenderPass(this);
+        if (Failed(ppxres)) {
+            return ppxres;
+        }
+        return T::OnUpdate();
+    }
+
+private:
+    RenderPassImpl mRenderPass;
+};
+
+RenderPassImpl::~RenderPassImpl()
+{
+    Cleanup();
+}
+
+Result RenderPassImpl::GetRenderPass(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, grfx::RenderPass** ppRenderPass) const
+{
+    if (!IsIndexInRange(imageIndex, mClearRenderPasses)) {
+        return ppx::ERROR_OUT_OF_RANGE;
+    }
+    if (loadOp == grfx::ATTACHMENT_LOAD_OP_CLEAR) {
+        *ppRenderPass = mClearRenderPasses[imageIndex];
+    }
+    else {
+        *ppRenderPass = mLoadRenderPasses[imageIndex];
+    }
+    return ppx::SUCCESS;
+}
+
+void RenderPassImpl::Cleanup()
+{
+    if (!device) {
+        return;
+    }
+    for (auto rp : mClearRenderPasses) {
+        device->DestroyRenderPass(rp);
+    }
+    mClearRenderPasses.clear();
+    for (auto rp : mLoadRenderPasses) {
+        device->DestroyRenderPass(rp);
+    }
+    mLoadRenderPasses.clear();
+}
+
+Result RenderPassImpl::UpdateRenderPass(Swapchain* swapchain)
+{
+    device = swapchain->GetDevice();
+    Cleanup();
+
+    bool hasDepthImage = swapchain->GetDepthFormat() != grfx::FORMAT_UNDEFINED;
+
+    // Create render passes with grfx::ATTACHMENT_LOAD_OP_CLEAR for render target.
+    for (uint32_t i = 0; i < swapchain->GetImageCount(); i++) {
+        grfx::RenderPassCreateInfo3 rpCreateInfo = {};
+        rpCreateInfo.width                       = swapchain->GetImageWidth();
+        rpCreateInfo.height                      = swapchain->GetImageHeight();
+        rpCreateInfo.renderTargetCount           = 1;
+        rpCreateInfo.pRenderTargetImages[0]      = swapchain->GetColorImage(i);
+        rpCreateInfo.pDepthStencilImage          = hasDepthImage ? swapchain->GetDepthImage(i) : nullptr;
+        rpCreateInfo.renderTargetClearValues[0]  = {{0.0f, 0.0f, 0.0f, 0.0f}};
+        rpCreateInfo.depthStencilClearValue      = {1.0f, 0xFF};
+        rpCreateInfo.renderTargetLoadOps[0]      = grfx::ATTACHMENT_LOAD_OP_CLEAR;
+        rpCreateInfo.depthLoadOp                 = grfx::ATTACHMENT_LOAD_OP_CLEAR;
+        rpCreateInfo.ownership                   = grfx::OWNERSHIP_RESTRICTED;
+
+        grfx::RenderPassPtr renderPass;
+
+        Result ppxres = swapchain->GetDevice()->CreateRenderPass(&rpCreateInfo, &renderPass);
+        if (Failed(ppxres)) {
+            PPX_ASSERT_MSG(false, "RenderPassImpl::UpdateRenderPass(CLEAR) failed");
+            return ppxres;
+        }
+
+        mClearRenderPasses.push_back(renderPass);
+    }
+
+    // Create render passes with grfx::ATTACHMENT_LOAD_OP_LOAD for render target.
+    for (uint32_t i = 0; i < swapchain->GetImageCount(); i++) {
+        grfx::RenderPassCreateInfo3 rpCreateInfo = {};
+        rpCreateInfo.width                       = swapchain->GetImageWidth();
+        rpCreateInfo.height                      = swapchain->GetImageHeight();
+        rpCreateInfo.renderTargetCount           = 1;
+        rpCreateInfo.pRenderTargetImages[0]      = swapchain->GetColorImage(i);
+        rpCreateInfo.pDepthStencilImage          = hasDepthImage ? swapchain->GetDepthImage(i) : nullptr;
+        rpCreateInfo.renderTargetClearValues[0]  = {{0.0f, 0.0f, 0.0f, 0.0f}};
+        rpCreateInfo.depthStencilClearValue      = {1.0f, 0xFF};
+        rpCreateInfo.renderTargetLoadOps[0]      = grfx::ATTACHMENT_LOAD_OP_LOAD;
+        rpCreateInfo.depthLoadOp                 = grfx::ATTACHMENT_LOAD_OP_CLEAR;
+        rpCreateInfo.ownership                   = grfx::OWNERSHIP_RESTRICTED;
+
+        grfx::RenderPassPtr renderPass;
+
+        Result ppxres = swapchain->GetDevice()->CreateRenderPass(&rpCreateInfo, &renderPass);
+        if (Failed(ppxres)) {
+            PPX_ASSERT_MSG(false, "RenderPassImpl::UpdateRenderPass(LOAD) failed");
+            return ppxres;
+        }
+
+        mLoadRenderPasses.push_back(renderPass);
+    }
+
+    return ppx::SUCCESS;
+}
+
+} // namespace
+
+// -------------------------------------------------------------------------------------------------
 // Swapchain
 
 grfx::Rect Swapchain::GetRenderArea() const
@@ -91,8 +232,6 @@ public:
     Result GetColorImage(uint32_t imageIndex, grfx::Image** ppImage) const final;
     Result GetDepthImage(uint32_t imageIndex, grfx::Image** ppImage) const final;
 
-    Result GetRenderPass(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, grfx::RenderPass** ppRenderPass) const final;
-
     Result AcquireNextImage(
         uint64_t         timeout,
         grfx::Semaphore* pSemaphore,
@@ -114,7 +253,10 @@ private:
 
 std::unique_ptr<DeviceSwapchainWrap> DeviceSwapchainWrap::Create(grfx::Swapchain* swapchain)
 {
-    return std::unique_ptr<DeviceSwapchainWrap>(new DeviceSwapchainWrapImpl(swapchain));
+    std::unique_ptr<DeviceSwapchainWrap> swapchainWrap =
+        std::unique_ptr<DeviceSwapchainWrap>(new WithRenderPass<DeviceSwapchainWrapImpl>(swapchain));
+    swapchainWrap->OnUpdate();
+    return swapchainWrap;
 }
 
 DeviceSwapchainWrapImpl::DeviceSwapchainWrapImpl(grfx::Swapchain* swapchain)
@@ -155,11 +297,6 @@ Result DeviceSwapchainWrapImpl::GetColorImage(uint32_t imageIndex, grfx::Image**
 Result DeviceSwapchainWrapImpl::GetDepthImage(uint32_t imageIndex, grfx::Image** ppImage) const
 {
     return mSwapchain->GetDepthImage(imageIndex, ppImage);
-}
-
-Result DeviceSwapchainWrapImpl::GetRenderPass(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, grfx::RenderPass** ppRenderPass) const
-{
-    return mSwapchain->GetRenderPass(imageIndex, loadOp, ppRenderPass);
 }
 
 Result DeviceSwapchainWrapImpl::AcquireNextImage(

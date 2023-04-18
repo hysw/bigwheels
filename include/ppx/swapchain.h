@@ -79,6 +79,9 @@ public:
 
 public:
     static std::unique_ptr<Swapchain> PresentHook(Swapchain* swapchain, std::function<void(grfx::CommandBuffer*)> f);
+
+protected:
+    virtual Result OnUpdate() { return ppx::SUCCESS; }
 };
 
 class DeviceSwapchainWrap : public Swapchain

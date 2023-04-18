@@ -122,12 +122,10 @@ public:
 
     Result GetColorImage(uint32_t imageIndex, grfx::Image** ppImage) const;
     Result GetDepthImage(uint32_t imageIndex, grfx::Image** ppImage) const;
-    Result GetRenderPass(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, grfx::RenderPass** ppRenderPass) const;
 
     // Convenience functions - returns empty object if index is invalid
     grfx::ImagePtr      GetColorImage(uint32_t imageIndex) const;
     grfx::ImagePtr      GetDepthImage(uint32_t imageIndex) const;
-    grfx::RenderPassPtr GetRenderPass(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp = grfx::ATTACHMENT_LOAD_OP_CLEAR) const;
 
     Result AcquireNextImage(
         uint64_t         timeout,    // Nanoseconds
@@ -191,8 +189,6 @@ protected:
     grfx::QueuePtr                   mQueue;
     std::vector<grfx::ImagePtr>      mDepthImages;
     std::vector<grfx::ImagePtr>      mColorImages;
-    std::vector<grfx::RenderPassPtr> mClearRenderPasses;
-    std::vector<grfx::RenderPassPtr> mLoadRenderPasses;
 
 #if defined(PPX_BUILD_XR)
     XrSwapchain mXrColorSwapchain = XR_NULL_HANDLE;

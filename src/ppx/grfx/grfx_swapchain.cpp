@@ -89,54 +89,6 @@ Result Swapchain::Create(const grfx::SwapchainCreateInfo* pCreateInfo)
         }
     }
 
-    // Create render passes with grfx::ATTACHMENT_LOAD_OP_CLEAR for render target.
-    for (size_t i = 0; i < mCreateInfo.imageCount; ++i) {
-        grfx::RenderPassCreateInfo3 rpCreateInfo = {};
-        rpCreateInfo.width                       = pCreateInfo->width;
-        rpCreateInfo.height                      = pCreateInfo->height;
-        rpCreateInfo.renderTargetCount           = 1;
-        rpCreateInfo.pRenderTargetImages[0]      = mColorImages[i];
-        rpCreateInfo.pDepthStencilImage          = mDepthImages.empty() ? nullptr : mDepthImages[i];
-        rpCreateInfo.renderTargetClearValues[0]  = {{0.0f, 0.0f, 0.0f, 0.0f}};
-        rpCreateInfo.depthStencilClearValue      = {1.0f, 0xFF};
-        rpCreateInfo.renderTargetLoadOps[0]      = grfx::ATTACHMENT_LOAD_OP_CLEAR;
-        rpCreateInfo.depthLoadOp                 = grfx::ATTACHMENT_LOAD_OP_CLEAR;
-        rpCreateInfo.ownership                   = grfx::OWNERSHIP_RESTRICTED;
-
-        grfx::RenderPassPtr renderPass;
-        ppxres = GetDevice()->CreateRenderPass(&rpCreateInfo, &renderPass);
-        if (Failed(ppxres)) {
-            PPX_ASSERT_MSG(false, "grfx::Swapchain::CreateRenderPass(CLEAR) failed");
-            return ppxres;
-        }
-
-        mClearRenderPasses.push_back(renderPass);
-    }
-
-    // Create render passes with grfx::ATTACHMENT_LOAD_OP_LOAD for render target.
-    for (size_t i = 0; i < mCreateInfo.imageCount; ++i) {
-        grfx::RenderPassCreateInfo3 rpCreateInfo = {};
-        rpCreateInfo.width                       = pCreateInfo->width;
-        rpCreateInfo.height                      = pCreateInfo->height;
-        rpCreateInfo.renderTargetCount           = 1;
-        rpCreateInfo.pRenderTargetImages[0]      = mColorImages[i];
-        rpCreateInfo.pDepthStencilImage          = mDepthImages.empty() ? nullptr : mDepthImages[i];
-        rpCreateInfo.renderTargetClearValues[0]  = {{0.0f, 0.0f, 0.0f, 0.0f}};
-        rpCreateInfo.depthStencilClearValue      = {1.0f, 0xFF};
-        rpCreateInfo.renderTargetLoadOps[0]      = grfx::ATTACHMENT_LOAD_OP_LOAD;
-        rpCreateInfo.depthLoadOp                 = grfx::ATTACHMENT_LOAD_OP_CLEAR;
-        rpCreateInfo.ownership                   = grfx::OWNERSHIP_RESTRICTED;
-
-        grfx::RenderPassPtr renderPass;
-        ppxres = GetDevice()->CreateRenderPass(&rpCreateInfo, &renderPass);
-        if (Failed(ppxres)) {
-            PPX_ASSERT_MSG(false, "grfx::Swapchain::CreateRenderPass(LOAD) failed");
-            return ppxres;
-        }
-
-        mLoadRenderPasses.push_back(renderPass);
-    }
-
     if (IsHeadless()) {
         // Set currentImageIndex to (imageCount - 1) so that the first
         // AcquireNextImage call acquires the first image at index 0.
@@ -162,34 +114,6 @@ Result Swapchain::Create(const grfx::SwapchainCreateInfo* pCreateInfo)
 
 void Swapchain::Destroy()
 {
-    for (auto& elem : mClearRenderPasses) {
-        if (elem) {
-            GetDevice()->DestroyRenderPass(elem);
-        }
-    }
-    mClearRenderPasses.clear();
-
-    for (auto& elem : mLoadRenderPasses) {
-        if (elem) {
-            GetDevice()->DestroyRenderPass(elem);
-        }
-    }
-    mLoadRenderPasses.clear();
-
-    for (auto& elem : mDepthImages) {
-        if (elem) {
-            GetDevice()->DestroyImage(elem);
-        }
-    }
-    mDepthImages.clear();
-
-    for (auto& elem : mColorImages) {
-        if (elem) {
-            GetDevice()->DestroyImage(elem);
-        }
-    }
-    mColorImages.clear();
-
 #if defined(PPX_BUILD_XR)
     if (mXrColorSwapchain != XR_NULL_HANDLE) {
         xrDestroySwapchain(mXrColorSwapchain);
@@ -227,20 +151,6 @@ Result Swapchain::GetDepthImage(uint32_t imageIndex, grfx::Image** ppImage) cons
     return ppx::SUCCESS;
 }
 
-Result Swapchain::GetRenderPass(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, grfx::RenderPass** ppRenderPass) const
-{
-    if (!IsIndexInRange(imageIndex, mClearRenderPasses)) {
-        return ppx::ERROR_OUT_OF_RANGE;
-    }
-    if (loadOp == grfx::ATTACHMENT_LOAD_OP_CLEAR) {
-        *ppRenderPass = mClearRenderPasses[imageIndex];
-    }
-    else {
-        *ppRenderPass = mLoadRenderPasses[imageIndex];
-    }
-    return ppx::SUCCESS;
-}
-
 grfx::ImagePtr Swapchain::GetColorImage(uint32_t imageIndex) const
 {
     grfx::ImagePtr object;
@@ -252,13 +162,6 @@ grfx::ImagePtr Swapchain::GetDepthImage(uint32_t imageIndex) const
 {
     grfx::ImagePtr object;
     GetDepthImage(imageIndex, &object);
-    return object;
-}
-
-grfx::RenderPassPtr Swapchain::GetRenderPass(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp) const
-{
-    grfx::RenderPassPtr object;
-    GetRenderPass(imageIndex, loadOp, &object);
     return object;
 }
 
