@@ -393,7 +393,7 @@ void ProjApp::Render()
 {
     PerFrame& frame = mPerFrame[0];
 
-    grfx::SwapchainPtr swapchain = GetSwapchain();
+    Swapchain* swapchain = GetSwapchain();
 
     int w = swapchain->GetWidth();
     int h = swapchain->GetHeight();

@@ -470,12 +470,12 @@ void FishTornadoApp::UpdateScene(uint32_t frameIndex)
 }
 
 void FishTornadoApp::RenderSceneUsingSingleCommandBuffer(
-    uint32_t            frameIndex,
-    PerFrame&           frame,
-    uint32_t            prevFrameIndex,
-    PerFrame&           prevFrame,
-    grfx::SwapchainPtr& swapchain,
-    uint32_t            imageIndex)
+    uint32_t   frameIndex,
+    PerFrame&  frame,
+    uint32_t   prevFrameIndex,
+    PerFrame&  prevFrame,
+    Swapchain* swapchain,
+    uint32_t   imageIndex)
 {
     // Build command buffer
     PPX_CHECKED_CALL(frame.cmd->Begin());
@@ -607,12 +607,12 @@ void FishTornadoApp::RenderSceneUsingSingleCommandBuffer(
 }
 
 void FishTornadoApp::RenderSceneUsingMultipleCommandBuffers(
-    uint32_t            frameIndex,
-    PerFrame&           frame,
-    uint32_t            prevFrameIndex,
-    PerFrame&           prevFrame,
-    grfx::SwapchainPtr& swapchain,
-    uint32_t            imageIndex)
+    uint32_t   frameIndex,
+    PerFrame&  frame,
+    uint32_t   prevFrameIndex,
+    PerFrame&  prevFrame,
+    Swapchain* swapchain,
+    uint32_t   imageIndex)
 {
 #if defined(ENABLE_GPU_QUERIES)
     frame.startTimestampQuery->Reset(0, 1);
@@ -857,11 +857,11 @@ void FishTornadoApp::RenderSceneUsingMultipleCommandBuffers(
 
 void FishTornadoApp::Render()
 {
-    uint32_t           frameIndex     = GetInFlightFrameIndex();
-    PerFrame&          frame          = mPerFrame[frameIndex];
-    uint32_t           prevFrameIndex = GetPreviousInFlightFrameIndex();
-    PerFrame&          prevFrame      = mPerFrame[prevFrameIndex];
-    grfx::SwapchainPtr swapchain      = GetSwapchain();
+    uint32_t   frameIndex     = GetInFlightFrameIndex();
+    PerFrame&  frame          = mPerFrame[frameIndex];
+    uint32_t   prevFrameIndex = GetPreviousInFlightFrameIndex();
+    PerFrame&  prevFrame      = mPerFrame[prevFrameIndex];
+    Swapchain* swapchain      = GetSwapchain();
 
     UpdateTime();
 

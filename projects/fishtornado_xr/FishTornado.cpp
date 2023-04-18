@@ -489,12 +489,12 @@ void FishTornadoApp::UpdateScene(uint32_t frameIndex)
 }
 
 void FishTornadoApp::RenderSceneUsingSingleCommandBuffer(
-    uint32_t            frameIndex,
-    PerFrame&           frame,
-    uint32_t            prevFrameIndex,
-    PerFrame&           prevFrame,
-    grfx::SwapchainPtr& swapchain,
-    uint32_t            imageIndex)
+    uint32_t    frameIndex,
+    PerFrame&   frame,
+    uint32_t    prevFrameIndex,
+    PerFrame&   prevFrame,
+    Swapchain*& swapchain,
+    uint32_t    imageIndex)
 {
     // Build command buffer
     PPX_CHECKED_CALL(frame.cmd->Begin());
@@ -649,12 +649,12 @@ void FishTornadoApp::RenderSceneUsingSingleCommandBuffer(
 }
 
 void FishTornadoApp::RenderSceneUsingMultipleCommandBuffers(
-    uint32_t            frameIndex,
-    PerFrame&           frame,
-    uint32_t            prevFrameIndex,
-    PerFrame&           prevFrame,
-    grfx::SwapchainPtr& swapchain,
-    uint32_t            imageIndex)
+    uint32_t    frameIndex,
+    PerFrame&   frame,
+    uint32_t    prevFrameIndex,
+    PerFrame&   prevFrame,
+    Swapchain*& swapchain,
+    uint32_t    imageIndex)
 {
 #if defined(ENABLE_GPU_QUERIES)
     frame.startTimestampQuery->Reset(0, 1);
@@ -955,7 +955,7 @@ void FishTornadoApp::Render()
 
     // Render UI into a different composition layer.
     if (IsXrEnabled() && (currentViewIndex == 0) && GetSettings()->enableImGui) {
-        grfx::SwapchainPtr uiSwapchain = GetUISwapchain();
+        Swapchain* uiSwapchain = GetUISwapchain();
         PPX_CHECKED_CALL(uiSwapchain->AcquireNextImage(UINT64_MAX, nullptr, nullptr, &imageIndex));
         PPX_CHECKED_CALL(frame.uiRenderCompleteFence->WaitAndReset());
 
@@ -992,7 +992,7 @@ void FishTornadoApp::Render()
         PPX_CHECKED_CALL(GetGraphicsQueue()->Submit(&submitInfo));
     }
 
-    grfx::SwapchainPtr swapchain = GetSwapchain(currentViewIndex);
+    Swapchain* swapchain = GetSwapchain(currentViewIndex);
 
     UpdateTime();
 
@@ -1051,7 +1051,7 @@ void FishTornadoApp::Render()
             // but this requires modifying the submission code.
             // For debug capture we don't care about the performance,
             // so use existing fence to sync for simplicity.
-            grfx::SwapchainPtr debugSwapchain = GetDebugCaptureSwapchain();
+            Swapchain* debugSwapchain = GetDebugCaptureSwapchain();
             PPX_CHECKED_CALL(debugSwapchain->AcquireNextImage(UINT64_MAX, nullptr, frame.imageAcquiredFence, &imageIndex));
             frame.imageAcquiredFence->WaitAndReset();
             PPX_CHECKED_CALL(debugSwapchain->Present(imageIndex, 0, nullptr));

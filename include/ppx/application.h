@@ -22,6 +22,7 @@
 #include "ppx/timer.h"
 #include "ppx/xr_component.h"
 #include "ppx/fs.h"
+#include "ppx/swapchain.h"
 
 #include <deque>
 #include <filesystem>
@@ -388,10 +389,10 @@ public:
 
     // "index" here is for XR applications to fetch the swapchain of different views.
     // For non-XR applications, "index" should be always 0.
-    grfx::SwapchainPtr GetSwapchain(uint32_t index = 0) const
+    Swapchain* GetSwapchain(uint32_t index = 0) const
     {
-        PPX_ASSERT_MSG(index < mSwapchain.size(), "Invalid Swapchain Index!");
-        return mSwapchain[index];
+        PPX_ASSERT_MSG(index < mDeviceSwapchainWrap.size(), "Invalid Swapchain Index!");
+        return mDeviceSwapchainWrap[index].get();
     }
 
     float    GetElapsedSeconds() const;
@@ -417,12 +418,12 @@ public:
         return mXrComponent;
     }
 
-    grfx::SwapchainPtr GetDebugCaptureSwapchain() const
+    Swapchain* GetDebugCaptureSwapchain() const
     {
         return GetSwapchain(mDebugCaptureSwapchainIndex);
     }
 
-    grfx::SwapchainPtr GetUISwapchain() const
+    Swapchain* GetUISwapchain() const
     {
         return GetSwapchain(mUISwapchainIndex);
     }
@@ -474,8 +475,11 @@ private:
     grfx::InstancePtr               mInstance                   = nullptr;
     grfx::DevicePtr                 mDevice                     = nullptr;
     grfx::SurfacePtr                mSurface                    = nullptr; // Requires enableDisplay
-    std::vector<grfx::SwapchainPtr> mSwapchain;                            // Requires enableDisplay
+    std::vector<grfx::SwapchainPtr> mDeviceSwapchain;                      // Requires enableDisplay
     std::unique_ptr<ImGuiImpl>      mImGui;
+
+    // Requires enableDisplay
+    std::vector<std::unique_ptr<DeviceSwapchainWrap>> mDeviceSwapchainWrap;
 
     uint64_t          mFrameCount        = 0;
     uint32_t          mSwapchainIndex    = 0;

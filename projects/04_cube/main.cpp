@@ -159,7 +159,7 @@ void ProjApp::Setup()
     // Vertex buffer and geometry data
     {
         // clang-format off
-        std::vector<float> vertexData = {  
+        std::vector<float> vertexData = {
             // position          // vertex colors
             -1.0f,-1.0f,-1.0f,   1.0f, 0.0f, 0.0f,  // -Z side
              1.0f, 1.0f,-1.0f,   1.0f, 0.0f, 0.0f,
@@ -228,7 +228,7 @@ void ProjApp::Render()
 {
     PerFrame& frame = mPerFrame[0];
 
-    grfx::SwapchainPtr swapchain = GetSwapchain();
+    Swapchain* swapchain = GetSwapchain();
 
     uint32_t imageIndex = UINT32_MAX;
     PPX_CHECKED_CALL(swapchain->AcquireNextImage(UINT64_MAX, frame.imageAcquiredSemaphore, frame.imageAcquiredFence, &imageIndex));

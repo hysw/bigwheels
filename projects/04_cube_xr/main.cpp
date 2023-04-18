@@ -250,7 +250,7 @@ void ProjApp::Render()
 
     // Render UI into a different composition layer.
     if (IsXrEnabled() && (currentViewIndex == 0) && GetSettings()->enableImGui) {
-        grfx::SwapchainPtr uiSwapchain = GetUISwapchain();
+        Swapchain* uiSwapchain = GetUISwapchain();
         PPX_CHECKED_CALL(uiSwapchain->AcquireNextImage(UINT64_MAX, nullptr, nullptr, &imageIndex));
         PPX_CHECKED_CALL(frame.uiRenderCompleteFence->WaitAndReset());
 
@@ -287,7 +287,7 @@ void ProjApp::Render()
         PPX_CHECKED_CALL(GetGraphicsQueue()->Submit(&submitInfo));
     }
 
-    grfx::SwapchainPtr swapchain = GetSwapchain(currentViewIndex);
+    Swapchain* swapchain = GetSwapchain(currentViewIndex);
 
     if (swapchain->ShouldSkipExternalSynchronization()) {
         // No need to
@@ -394,7 +394,7 @@ void ProjApp::Render()
             // but this requires modifying the submission code.
             // For debug capture we don't care about the performance,
             // so use existing fence to sync for simplicity.
-            grfx::SwapchainPtr debugSwapchain = GetDebugCaptureSwapchain();
+            Swapchain* debugSwapchain = GetDebugCaptureSwapchain();
             PPX_CHECKED_CALL(debugSwapchain->AcquireNextImage(UINT64_MAX, nullptr, frame.imageAcquiredFence, &imageIndex));
             frame.imageAcquiredFence->WaitAndReset();
             PPX_CHECKED_CALL(debugSwapchain->Present(imageIndex, 0, nullptr));

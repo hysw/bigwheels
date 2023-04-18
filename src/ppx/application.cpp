@@ -799,9 +799,9 @@ Result Application::InitializeGrfxSwapchain()
         const size_t swapchainCount = viewCount + 1;
         mStereoscopicSwapchainIndex = 0;
         mUISwapchainIndex           = static_cast<uint32_t>(viewCount);
-        mSwapchain.resize(swapchainCount);
+        mDeviceSwapchain.resize(swapchainCount);
         for (size_t k = 0; k < swapchainCount; ++k) {
-            Result ppxres = mDevice->CreateSwapchain(&ci, &mSwapchain[k]);
+            Result ppxres = mDevice->CreateSwapchain(&ci, &mDeviceSwapchain[k]);
             if (Failed(ppxres)) {
                 PPX_ASSERT_MSG(false, "grfx::Device::CreateSwapchain failed");
                 return ppxres;
@@ -809,7 +809,7 @@ Result Application::InitializeGrfxSwapchain()
         }
 
         // Image count is from xrEnumerateSwapchainImages
-        mSettings.grfx.swapchain.imageCount = mSwapchain[0]->GetImageCount();
+        mSettings.grfx.swapchain.imageCount = mDeviceSwapchain[0]->GetImageCount();
     }
 
     if (!mSettings.xr.enable
@@ -864,7 +864,7 @@ Result Application::InitializeGrfxSwapchain()
         }
 #if defined(PPX_BUILD_XR)
         if (mSettings.xr.enable && mSettings.xr.enableDebugCapture) {
-            mDebugCaptureSwapchainIndex = static_cast<uint32_t>(mSwapchain.size());
+            mDebugCaptureSwapchainIndex = static_cast<uint32_t>(mDeviceSwapchain.size());
             // The window size could be smaller than the requested one in glfwCreateWindow
             // So the final swapchain size for window needs to be adjusted
             // In the case of debug capture, we don't care about the window size after creating the dummy window
@@ -873,7 +873,10 @@ Result Application::InitializeGrfxSwapchain()
             mSettings.window.height = mXrComponent.GetHeight();
         }
 #endif
-        mSwapchain.push_back(swapchain);
+        mDeviceSwapchain.push_back(swapchain);
+    }
+    for (auto swapchain : mDeviceSwapchain) {
+        mDeviceSwapchainWrap.push_back(DeviceSwapchainWrap::Create(swapchain));
     }
 
     return ppx::SUCCESS;
@@ -933,11 +936,13 @@ void Application::StopGrfx()
 void Application::ShutdownGrfx()
 {
     if (mInstance) {
-        for (auto& sc : mSwapchain) {
+        mDeviceSwapchainWrap.clear();
+
+        for (auto& sc : mDeviceSwapchain) {
             mDevice->DestroySwapchain(sc);
             sc.Reset();
         }
-        mSwapchain.clear();
+        mDeviceSwapchain.clear();
 
         if (mDevice) {
             mInstance->DestroyDevice(mDevice);
@@ -1086,7 +1091,7 @@ void Application::DispatchRender()
 
 void Application::TakeScreenshot()
 {
-    auto swapchainImg = GetSwapchain()->GetColorImage(GetSwapchain()->GetCurrentImageIndex());
+    auto swapchainImg = mDeviceSwapchain[0]->GetColorImage(mDeviceSwapchain[0]->GetCurrentImageIndex());
     auto queue        = mDevice->GetGraphicsQueue();
 
     const grfx::FormatDesc* formatDesc = grfx::GetFormatDescription(swapchainImg->GetFormat());
@@ -1459,7 +1464,7 @@ int Application::Run(int argc, char** argv)
                         }
                     }
                 }
-                mXrComponent.EndFrame(mSwapchain, 0, mUISwapchainIndex);
+                mXrComponent.EndFrame(mDeviceSwapchain, 0, mUISwapchainIndex);
             }
         }
         else

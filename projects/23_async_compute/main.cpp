@@ -722,7 +722,7 @@ void ProjApp::Render()
 {
     PerFrame& frame = mPerFrame[GetInFlightFrameIndex()];
 
-    grfx::SwapchainPtr swapchain = GetSwapchain();
+    Swapchain* swapchain = GetSwapchain();
 
     uint32_t imageIndex = AcquireFrame(frame);
 

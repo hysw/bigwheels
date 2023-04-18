@@ -110,7 +110,7 @@ private:
     void LoadScene(
         const std::filesystem::path& filename,
         grfx::Device*                pDevice,
-        grfx::Swapchain*             pSwapchain,
+        Swapchain*                   pSwapchain,
         grfx::Queue*                 pQueue,
         grfx::DescriptorPool*        pDescriptorPool,
         TextureCache*                pTextureCache,
@@ -121,7 +121,7 @@ private:
     void LoadMaterial(
         const std::filesystem::path& gltfFolder,
         const cgltf_material&        material,
-        grfx::Swapchain*             pSwapchain,
+        Swapchain*                   pSwapchain,
         grfx::Queue*                 pQueue,
         grfx::DescriptorPool*        pDescriptorPool,
         TextureCache*                pTextureCache,
@@ -237,7 +237,7 @@ Bitmap ColorToBitmap(const float3& color)
 void ProjApp::LoadMaterial(
     const std::filesystem::path& gltfFolder,
     const cgltf_material&        material,
-    grfx::Swapchain*             pSwapchain,
+    Swapchain*                   pSwapchain,
     grfx::Queue*                 pQueue,
     grfx::DescriptorPool*        pDescriptorPool,
     TextureCache*                pTextureCache,
@@ -439,7 +439,7 @@ void ProjApp::LoadPrimitive(const cgltf_primitive& primitive, grfx::BufferPtr pS
 void ProjApp::LoadScene(
     const std::filesystem::path& filename,
     grfx::Device*                pDevice,
-    grfx::Swapchain*             pSwapchain,
+    Swapchain*                   pSwapchain,
     grfx::Queue*                 pQueue,
     grfx::DescriptorPool*        pDescriptorPool,
     TextureCache*                pTextureCache,
@@ -706,9 +706,9 @@ void ProjApp::Setup()
 
 void ProjApp::Render()
 {
-    PerFrame&          frame      = mPerFrame[0];
-    grfx::SwapchainPtr swapchain  = GetSwapchain();
-    uint32_t           imageIndex = UINT32_MAX;
+    PerFrame&  frame      = mPerFrame[0];
+    Swapchain* swapchain  = GetSwapchain();
+    uint32_t   imageIndex = UINT32_MAX;
     PPX_CHECKED_CALL(swapchain->AcquireNextImage(UINT64_MAX, frame.imageAcquiredSemaphore, frame.imageAcquiredFence, &imageIndex));
     // Wait for and reset image acquired fence
     PPX_CHECKED_CALL(frame.imageAcquiredFence->WaitAndReset());

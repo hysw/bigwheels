@@ -78,7 +78,7 @@ void ProjApp::Render()
 {
     PerFrame& frame = mSim->GetFrame(0);
 
-    ppx::grfx::SwapchainPtr swapchain = GetSwapchain();
+    ppx::Swapchain* swapchain = GetSwapchain();
 
     uint32_t imageIndex = UINT32_MAX;
     PPX_CHECKED_CALL(swapchain->AcquireNextImage(UINT64_MAX, frame.imageAcquiredSemaphore, frame.imageAcquiredFence, &imageIndex));

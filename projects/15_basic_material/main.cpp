@@ -775,7 +775,7 @@ void ProjApp::Render()
     uint32_t  iffIndex = GetInFlightFrameIndex();
     PerFrame& frame    = mPerFrame[0];
 
-    grfx::SwapchainPtr swapchain = GetSwapchain();
+    Swapchain* swapchain = GetSwapchain();
 
     uint32_t imageIndex = UINT32_MAX;
     PPX_CHECKED_CALL(swapchain->AcquireNextImage(UINT64_MAX, frame.imageAcquiredSemaphore, frame.imageAcquiredFence, &imageIndex));
