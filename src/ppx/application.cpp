@@ -881,14 +881,56 @@ Result Application::InitializeGrfxSwapchain()
         }
     }
 
-    if (mSettings.enableImGui && !mImGuiSwapchainHook && !mSettings.xr.enable && mDeviceSwapchainWrap.size() == 1) {
+    if (mSettings.xr.enable) {
+        return ppx::SUCCESS;
+    }
+
+    if (mDeviceSwapchainWrap.size() != 1) {
+        return ppx::SUCCESS;
+    }
+
+    Swapchain* topSwapchain = mDeviceSwapchainWrap.back().get();
+
+    if (mSettings.enableImGui && !mImGuiSwapchainHook) {
         // Still need some time to figure out XR implementation of this.
-        mImGuiSwapchainHook = Swapchain::PresentHook(mDeviceSwapchainWrap.back().get(), [this](grfx::CommandBuffer* pCommandBuffer) {
+        mImGuiSwapchainHook = Swapchain::PresentHook(topSwapchain, [this](grfx::CommandBuffer* pCommandBuffer) {
             // Draw ImGui
             DrawDebugInfo([this]() { DrawAdditionalDebugInfo(); });
             DrawImGui(pCommandBuffer);
         });
     }
+
+    if (mImGuiSwapchainHook) {
+        topSwapchain = mImGuiSwapchainHook.get();
+    }
+
+    if (!mVirtualSwapchain && mSettings.grfx.framebuffer.offscreen) {
+        if (mSettings.grfx.framebuffer.width == 0 || mSettings.grfx.framebuffer.height == 0) {
+            mSettings.grfx.framebuffer.width  = mSettings.window.width;
+            mSettings.grfx.framebuffer.height = mSettings.window.height;
+        }
+        if (mSettings.grfx.framebuffer.colorFormat == ppx::grfx::FORMAT_UNDEFINED) {
+            mSettings.grfx.framebuffer.colorFormat = mSettings.grfx.swapchain.colorFormat;
+        }
+        if (mSettings.grfx.framebuffer.depthFormat == ppx::grfx::FORMAT_UNDEFINED) {
+            mSettings.grfx.framebuffer.depthFormat = mSettings.grfx.swapchain.depthFormat;
+        }
+        mVirtualSwapchain = VirtualSwapchain::Create(
+            topSwapchain,
+            {
+                mDevice->GetGraphicsQueue(),
+                mSettings.grfx.framebuffer.width,
+                mSettings.grfx.framebuffer.height,
+                mSettings.grfx.framebuffer.colorFormat,
+                mSettings.grfx.framebuffer.depthFormat,
+                topSwapchain->GetImageCount(),
+            });
+    }
+    
+    if (mVirtualSwapchain) {
+        topSwapchain = mVirtualSwapchain.get();
+    }
+
     return ppx::SUCCESS;
 }
 
@@ -907,6 +949,12 @@ Result Application::UpdateSwapchain()
     DeviceSwapchainWrap* swapchain = mDeviceSwapchainWrap[0].get();
     if (!swapchain->NeedUpdate()) {
         return ppx::SUCCESS;
+    }
+
+    if (mVirtualSwapchain && mSettings.grfx.framebuffer.resizable) {
+        uint32_t width  = std::min(mSettings.window.width, mVirtualSwapchain->GetImageWidth());
+        uint32_t height = std::min(mSettings.window.height, mVirtualSwapchain->GetImageHeight());
+        mVirtualSwapchain->UpdateViewport(width, height);
     }
 
     ppx::Result ppxres = ppx::ERROR_FAILED;
@@ -994,6 +1042,7 @@ void Application::StopGrfx()
 void Application::ShutdownGrfx()
 {
     if (mInstance) {
+        mVirtualSwapchain.reset();
         mImGuiSwapchainHook.reset();
         mDeviceSwapchainWrap.clear();
 
@@ -1756,8 +1805,20 @@ void Application::DrawDebugInfo(std::function<void(void)> drawAdditionalFn)
     if (!mImGui) {
         return;
     }
+
+    if (mVirtualSwapchain && (mViewportSize.w < 1 || mViewportSize.h < 1)) {
+        mViewportSize.w = std::min(GetWindowWidth(), mVirtualSwapchain->GetImageWidth());
+        mViewportSize.h = std::min(GetWindowHeight(), mVirtualSwapchain->GetImageHeight());
+    }
+
     ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, {static_cast<float>(GetWindowWidth() / 2), static_cast<float>(GetWindowHeight() / 2)});
     if (ImGui::Begin("Debug Info")) {
+        if (mVirtualSwapchain && mSettings.grfx.framebuffer.resizable) {
+            ImGui::SliderInt("Viewport Width", &mViewportSize.w, 1, mVirtualSwapchain->GetImageWidth(), "%d");
+            ImGui::SliderInt("Viewport Height", &mViewportSize.h, 1, mVirtualSwapchain->GetImageHeight(), "%d");
+            ImGui::Separator();
+        }
+
         ImGui::Columns(2);
 
         // Platform
@@ -1861,12 +1922,32 @@ void Application::DrawDebugInfo(std::function<void(void)> drawAdditionalFn)
         {
             ImGui::Text("Swapchain Resolution");
             ImGui::NextColumn();
-            ImGui::Text("%dx%d", GetSwapchain()->GetWidth(), GetSwapchain()->GetHeight());
+            ImGui::Text("%dx%d", GetDeviceSwapchain()->GetImageWidth(), GetDeviceSwapchain()->GetImageHeight());
             ImGui::NextColumn();
 
             ImGui::Text("Swapchain Image Count");
             ImGui::NextColumn();
             ImGui::Text("%d", GetSwapchain()->GetImageCount());
+            ImGui::NextColumn();
+        }
+
+        // Framebuffer Resolution
+        if (mVirtualSwapchain) {
+            grfx::Rect renderArea = GetSwapchain()->GetRenderArea();
+
+            ImGui::Text("Framebuffer Size");
+            ImGui::NextColumn();
+            ImGui::Text("%ux%u", GetSwapchain()->GetImageWidth(), GetSwapchain()->GetImageHeight());
+            ImGui::NextColumn();
+
+            ImGui::Text("Framebuffer Image Count");
+            ImGui::NextColumn();
+            ImGui::Text("%u", GetSwapchain()->GetImageCount());
+            ImGui::NextColumn();
+
+            ImGui::Text("Viewport Size");
+            ImGui::NextColumn();
+            ImGui::Text("%ux%u", renderArea.width, renderArea.height);
             ImGui::NextColumn();
         }
 
@@ -1879,6 +1960,12 @@ void Application::DrawDebugInfo(std::function<void(void)> drawAdditionalFn)
     }
     ImGui::End();
     ImGui::PopStyleVar();
+
+    if (mVirtualSwapchain && mSettings.grfx.framebuffer.resizable) {
+        int width  = std::min<int>(mViewportSize.w, mVirtualSwapchain->GetImageWidth());
+        int height = std::min<int>(mViewportSize.h, mVirtualSwapchain->GetImageHeight());
+        mVirtualSwapchain->UpdateViewport(mViewportSize.w, mViewportSize.h);
+    }
 }
 
 void Application::DrawProfilerGrfxApiFunctions()

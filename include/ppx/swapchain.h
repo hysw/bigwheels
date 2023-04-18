@@ -95,6 +95,34 @@ public:
     virtual void   SetNeedUpdate()                         = 0;
 };
 
+class VirtualSwapchain : public Swapchain
+{
+public:
+    struct CreateInfo
+    {
+        grfx::Queue* pQueue      = nullptr;
+        uint32_t     width       = 0;
+        uint32_t     height      = 0;
+        grfx::Format colorFormat = grfx::FORMAT_UNDEFINED;
+        grfx::Format depthFormat = grfx::FORMAT_UNDEFINED;
+        uint32_t     imageCount  = 0;
+    };
+
+    static std::unique_ptr<VirtualSwapchain> Create(Swapchain* realSwapchain, const CreateInfo& createInfo);
+
+public:
+    grfx::Rect GetRenderArea() const override;
+
+    void UpdateRenderArea(grfx::Rect renderArea);
+    void UpdateViewport(uint32_t width, uint32_t height)
+    {
+        UpdateRenderArea({0, 0, width, height});
+    }
+
+private:
+    grfx::Rect mRenderArea = {0, 0, 0, 0};
+};
+
 } // namespace ppx
 
 #endif // ppx_swapchain_h

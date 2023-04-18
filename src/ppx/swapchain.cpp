@@ -543,4 +543,281 @@ std::unique_ptr<Swapchain> Swapchain::PresentHook(Swapchain* swapchain, std::fun
     return res;
 }
 
+// -------------------------------------------------------------------------------------------------
+// VirtualSwapchain
+
+grfx::Rect VirtualSwapchain::GetRenderArea() const
+{
+    if (mRenderArea.width == 0 || mRenderArea.height == 0) {
+        return {0, 0, GetImageWidth(), GetImageHeight()};
+    }
+    return mRenderArea;
+}
+
+void VirtualSwapchain::UpdateRenderArea(grfx::Rect renderArea)
+{
+    grfx::Rect current = GetRenderArea();
+    if (renderArea.x == current.x &&
+        renderArea.y == current.y &&
+        renderArea.width == current.width &&
+        renderArea.height == current.height) {
+        return;
+    }
+    if (renderArea.x < 0 || renderArea.y < 0 ||
+        renderArea.width == 0 || renderArea.height == 0 ||
+        renderArea.x + renderArea.width > GetImageWidth() ||
+        renderArea.y + renderArea.height > GetImageHeight()) {
+        return;
+    }
+    mRenderArea = renderArea;
+}
+
+class VirtualSwapchainImpl : public VirtualSwapchain
+{
+public:
+    uint32_t     GetImageCount() const final { return mCreateInfo.imageCount; }
+    grfx::Format GetColorFormat() const final { return mCreateInfo.colorFormat; }
+    grfx::Format GetDepthFormat() const final { return mCreateInfo.depthFormat; }
+
+    uint32_t GetImageWidth() const final { return mCreateInfo.width; }
+    uint32_t GetImageHeight() const final { return mCreateInfo.height; }
+
+    Result GetColorImage(uint32_t imageIndex, grfx::Image** ppImage) const final;
+    Result GetDepthImage(uint32_t imageIndex, grfx::Image** ppImage) const final;
+
+    grfx::Device* GetDevice() const final;
+
+    std::vector<grfx::ImagePtr> mDepthImages;
+    std::vector<grfx::ImagePtr> mColorImages;
+
+    Result InitVirtualSwapchain();
+
+protected:
+    VirtualSwapchainImpl(const CreateInfo& createInfo);
+
+    grfx::Queue* GetQueue() const { return mCreateInfo.pQueue; }
+
+private:
+    CreateInfo mCreateInfo = {};
+};
+
+VirtualSwapchainImpl::VirtualSwapchainImpl(const CreateInfo& createInfo)
+    : mCreateInfo(createInfo)
+{
+}
+
+Result VirtualSwapchainImpl::InitVirtualSwapchain()
+{
+    // Create color images if needed. This is only needed if we're creating
+    // a headless swapchain.
+    if (mColorImages.empty()) {
+        for (uint32_t i = 0; i < mCreateInfo.imageCount; ++i) {
+            grfx::ImageCreateInfo rtCreateInfo = grfx::ImageCreateInfo::RenderTarget2D(mCreateInfo.width, mCreateInfo.height, mCreateInfo.colorFormat);
+            rtCreateInfo.ownership             = grfx::OWNERSHIP_RESTRICTED;
+            rtCreateInfo.RTVClearValue         = {0.0f, 0.0f, 0.0f, 0.0f};
+            rtCreateInfo.initialState          = grfx::RESOURCE_STATE_PRESENT;
+            rtCreateInfo.usageFlags =
+                grfx::IMAGE_USAGE_COLOR_ATTACHMENT |
+                grfx::IMAGE_USAGE_TRANSFER_SRC |
+                grfx::IMAGE_USAGE_TRANSFER_DST |
+                grfx::IMAGE_USAGE_SAMPLED;
+
+            grfx::ImagePtr renderTargetOLD;
+
+            Result ppxres = GetQueue()->GetDevice()->CreateImage(&rtCreateInfo, &renderTargetOLD);
+            if (Failed(ppxres)) {
+                return ppxres;
+            }
+
+            mColorImages.push_back(renderTargetOLD);
+        }
+    }
+
+    // Create depth images if needed. This is usually needed for both normal swapchains
+    // and headless swapchains, but not needed for XR swapchains which create their own
+    // depth images.
+    if (mCreateInfo.depthFormat != grfx::FORMAT_UNDEFINED && mDepthImages.empty()) {
+        for (uint32_t i = 0; i < mCreateInfo.imageCount; ++i) {
+            grfx::ImageCreateInfo dpCreateInfo = grfx::ImageCreateInfo::DepthStencilTarget(mCreateInfo.width, mCreateInfo.height, mCreateInfo.depthFormat);
+            dpCreateInfo.ownership             = grfx::OWNERSHIP_RESTRICTED;
+            dpCreateInfo.DSVClearValue         = {1.0f, 0xFF};
+
+            grfx::ImagePtr depthStencilTarget;
+
+            Result ppxres = GetQueue()->GetDevice()->CreateImage(&dpCreateInfo, &depthStencilTarget);
+            if (Failed(ppxres)) {
+                return ppxres;
+            }
+
+            mDepthImages.push_back(depthStencilTarget);
+        }
+    }
+
+    return OnUpdate();
+}
+
+Result VirtualSwapchainImpl::GetColorImage(uint32_t imageIndex, grfx::Image** ppImage) const
+{
+    if (!IsIndexInRange(imageIndex, mColorImages)) {
+        return ppx::ERROR_OUT_OF_RANGE;
+    }
+    *ppImage = mColorImages[imageIndex];
+    return ppx::SUCCESS;
+}
+
+Result VirtualSwapchainImpl::GetDepthImage(uint32_t imageIndex, grfx::Image** ppImage) const
+{
+    if (!IsIndexInRange(imageIndex, mDepthImages)) {
+        return ppx::ERROR_OUT_OF_RANGE;
+    }
+    *ppImage = mDepthImages[imageIndex];
+    return ppx::SUCCESS;
+}
+
+grfx::Device* VirtualSwapchainImpl::GetDevice() const
+{
+    return mCreateInfo.pQueue->GetDevice();
+}
+
+// -------------------------------------------------------------------------------------------------
+// IndirectSwapchain
+
+class IndirectSwapchain : public VirtualSwapchainImpl
+{
+public:
+    Result AcquireNextImage(
+        uint64_t         timeout,    // Nanoseconds
+        grfx::Semaphore* pSemaphore, // Wait sempahore
+        grfx::Fence*     pFence,     // Wait fence
+        uint32_t*        pImageIndex) final;
+
+    Result Present(
+        uint32_t                      imageIndex,
+        uint32_t                      waitSemaphoreCount,
+        const grfx::Semaphore* const* ppWaitSemaphores) override;
+
+public:
+    IndirectSwapchain(Swapchain* next, const CreateInfo& createInfo);
+
+protected:
+    void RecordCommands(uint32_t imageIndex, grfx::CommandBuffer* commandBuffer);
+
+private:
+    Swapchain* mNext = nullptr;
+};
+
+IndirectSwapchain::IndirectSwapchain(Swapchain* next, const CreateInfo& createInfo)
+    : VirtualSwapchainImpl(createInfo), mNext(next)
+{
+}
+
+Result IndirectSwapchain::AcquireNextImage(
+    uint64_t         timeout,    // Nanoseconds
+    grfx::Semaphore* pSemaphore, // Wait sempahore
+    grfx::Fence*     pFence,     // Wait fence
+    uint32_t*        pImageIndex)
+{
+    Result ppxres = mNext->AcquireNextImage(timeout, pSemaphore, pFence, pImageIndex);
+    if (ppxres == ppx::ERROR_SUBOPTIMAL) {
+        return ppx::SUCCESS;
+    }
+    if (ppxres == ppx::ERROR_OUT_OF_DATE) {
+        // In case swapchain resize, just release the image directly.
+        *pImageIndex = 0;
+
+        grfx::SubmitInfo sInfo     = {};
+        sInfo.ppCommandBuffers     = nullptr;
+        sInfo.commandBufferCount   = 0;
+        sInfo.pFence               = pFence;
+        sInfo.ppSignalSemaphores   = &pSemaphore;
+        sInfo.signalSemaphoreCount = 1;
+        GetQueue()->Submit(&sInfo);
+
+        return ppx::SUCCESS;
+    }
+    return ppxres;
+}
+
+Result IndirectSwapchain::Present(
+    uint32_t                      imageIndex,
+    uint32_t                      waitSemaphoreCount,
+    const grfx::Semaphore* const* ppWaitSemaphores)
+{
+    Result ppxres = mNext->Present(
+        imageIndex,
+        waitSemaphoreCount,
+        ppWaitSemaphores);
+    if (ppxres == ppx::ERROR_SUBOPTIMAL) {
+        return ppx::SUCCESS;
+    }
+    if (ppxres == ppx::ERROR_OUT_OF_DATE) {
+        return ppx::SUCCESS;
+    }
+    return ppxres;
+}
+
+void IndirectSwapchain::RecordCommands(uint32_t imageIndex, grfx::CommandBuffer* commandBuffer)
+{
+    grfx::ImageToImageCopyInfo imcopy = {};
+    {
+        grfx::Rect src           = GetRenderArea();
+        grfx::Rect dst           = mNext->GetRenderArea();
+        imcopy.srcImage.offset.x = src.x;
+        imcopy.srcImage.offset.y = src.y;
+        imcopy.dstImage.offset.x = dst.x;
+        imcopy.dstImage.offset.y = dst.y;
+        if (src.width > dst.width) {
+            imcopy.srcImage.offset.x += (src.width - dst.width) / 2;
+        }
+        else {
+            imcopy.dstImage.offset.x += (dst.width - src.width) / 2;
+        }
+        if (src.height > dst.height) {
+            imcopy.srcImage.offset.y += (src.height - dst.height) / 2;
+        }
+        else {
+            imcopy.dstImage.offset.y += (dst.height - src.height) / 2;
+        }
+        imcopy.extent.x = std::min(src.width, dst.width);
+        imcopy.extent.y = std::min(src.height, dst.height);
+    }
+
+    grfx::Image* srcImage = Swapchain::GetColorImage(imageIndex);
+    grfx::Image* dstImage = mNext->GetColorImage(imageIndex);
+
+    commandBuffer->TransitionImageLayout(dstImage, PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_PRESENT, grfx::RESOURCE_STATE_RENDER_TARGET);
+    {
+        // Clear screen.
+        grfx::RenderPassPtr renderPass = mNext->GetRenderPass(imageIndex, grfx::ATTACHMENT_LOAD_OP_CLEAR);
+
+        grfx::RenderPassBeginInfo beginInfo = {};
+        beginInfo.pRenderPass               = renderPass;
+        beginInfo.renderArea                = renderPass->GetRenderArea();
+        beginInfo.RTVClearCount             = 1;
+        beginInfo.RTVClearValues[0]         = {{0.5, 0.5, 0.5, 0}};
+        beginInfo.DSVClearValue             = {1.0f, 0xFF};
+
+        commandBuffer->BeginRenderPass(&beginInfo);
+        commandBuffer->EndRenderPass();
+    }
+    commandBuffer->TransitionImageLayout(dstImage, PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_COPY_DST);
+    {
+        // Copy rendered image.
+        // Note(tianc): this should be a image blit instead of copy.
+        commandBuffer->TransitionImageLayout(srcImage, PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_PRESENT, grfx::RESOURCE_STATE_COPY_SRC);
+        commandBuffer->CopyImageToImage(&imcopy, srcImage, dstImage);
+        commandBuffer->TransitionImageLayout(srcImage, PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_COPY_SRC, grfx::RESOURCE_STATE_PRESENT);
+    }
+    commandBuffer->TransitionImageLayout(dstImage, PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_COPY_DST, grfx::RESOURCE_STATE_PRESENT);
+}
+
+std::unique_ptr<VirtualSwapchain> VirtualSwapchain::Create(Swapchain* realSwapchain, const CreateInfo& createInfo)
+{
+    auto res = std::make_unique<WithRenderPass<WithPostProcess<IndirectSwapchain>>>(realSwapchain, createInfo);
+    res->InitVirtualSwapchain();
+    res->InitPostProcess(createInfo.pQueue);
+    static_cast<VirtualSwapchain*>(res.get())->OnUpdate();
+    return res;
+}
+
 } // namespace ppx

@@ -296,6 +296,18 @@ struct ApplicationSettings
             grfx::Format depthFormat = grfx::FORMAT_UNDEFINED;
             uint32_t     imageCount  = 2;
         } swapchain;
+
+        struct
+        {
+            bool offscreen = false;
+            bool resizable = false;
+            // If 0, uses initial window width/height.
+            uint32_t width  = 0;
+            uint32_t height = 0;
+            // If FORMAT_UNDEFINED, uses swapchain format.
+            grfx::Format colorFormat = grfx::FORMAT_UNDEFINED;
+            grfx::Format depthFormat = grfx::FORMAT_UNDEFINED;
+        } framebuffer;
     } grfx;
 };
 
@@ -393,6 +405,9 @@ public:
     Swapchain* GetSwapchain(uint32_t index = 0) const
     {
         if (index == 0) {
+            if (mVirtualSwapchain) {
+                return mVirtualSwapchain.get();
+            }
             if (mImGuiSwapchainHook) {
                 return mImGuiSwapchainHook.get();
             }
@@ -400,11 +415,13 @@ public:
         PPX_ASSERT_MSG(index < mDeviceSwapchainWrap.size(), "Invalid Swapchain Index!");
         return mDeviceSwapchainWrap[index].get();
     }
-    Swapchain* GetImGuiSwapchain() const
+    Swapchain* GetDeviceSwapchain() const
     {
         PPX_ASSERT_MSG(!mDeviceSwapchainWrap.empty(), "Invalid Swapchain Index!");
         return mDeviceSwapchainWrap.back().get();
     }
+    Swapchain* GetImGuiSwapchain() const { return GetDeviceSwapchain(); }
+
     float    GetElapsedSeconds() const;
     float    GetPrevFrameTime() const { return mPreviousFrameTime; }
     uint64_t GetFrameCount() const { return mFrameCount; }
@@ -492,6 +509,7 @@ private:
     // Requires enableDisplay
     std::vector<std::unique_ptr<DeviceSwapchainWrap>> mDeviceSwapchainWrap;
     std::unique_ptr<Swapchain>                        mImGuiSwapchainHook;
+    std::unique_ptr<VirtualSwapchain>                 mVirtualSwapchain;
 
     uint64_t          mFrameCount        = 0;
     uint32_t          mSwapchainIndex    = 0;
@@ -502,6 +520,11 @@ private:
     float             mAverageFrameTime  = 0;
     double            mFirstFrameTime    = 0;
     std::deque<float> mFrameTimesMs;
+
+    struct
+    {
+        int w, h;
+    } mViewportSize;
 
 #if defined(PPX_BUILD_XR)
     XrComponent mXrComponent;
