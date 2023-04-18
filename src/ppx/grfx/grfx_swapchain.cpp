@@ -165,6 +165,39 @@ grfx::ImagePtr Swapchain::GetDepthImage(uint32_t imageIndex) const
     return object;
 }
 
+Result Swapchain::ResizeInternal(uint32_t width, uint32_t height)
+{
+    return ppx::ERROR_UNSUPPORTED_API;
+}
+
+Result Swapchain::Resize(uint32_t width, uint32_t height)
+{
+    bool   needDepthImage = (mCreateInfo.depthFormat != grfx::FORMAT_UNDEFINED) && (!mDepthImages.empty());
+    Result ppxres         = ResizeInternal(width, height);
+    if (ppxres == ppx::SUCCESS) {
+        mCreateInfo.width  = width;
+        mCreateInfo.height = height;
+    }
+    if (needDepthImage && mDepthImages.empty()) {
+        // Recreate Depth Images
+        for (uint32_t i = 0; i < mCreateInfo.imageCount; ++i) {
+            grfx::ImageCreateInfo dpCreateInfo = ImageCreateInfo::DepthStencilTarget(mCreateInfo.width, mCreateInfo.height, mCreateInfo.depthFormat);
+            dpCreateInfo.ownership             = grfx::OWNERSHIP_RESTRICTED;
+            dpCreateInfo.DSVClearValue         = {1.0f, 0xFF};
+
+            grfx::ImagePtr depthStencilTarget;
+            ppxres = GetDevice()->CreateImage(&dpCreateInfo, &depthStencilTarget);
+            if (Failed(ppxres)) {
+                return ppxres;
+            }
+
+            mDepthImages.push_back(depthStencilTarget);
+        }
+    }
+
+    return ppxres;
+}
+
 Result Swapchain::AcquireNextImage(
     uint64_t         timeout,    // Nanoseconds
     grfx::Semaphore* pSemaphore, // Wait sempahore

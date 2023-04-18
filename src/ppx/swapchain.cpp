@@ -219,9 +219,6 @@ grfx::RenderPassPtr Swapchain::GetRenderPass(uint32_t imageIndex, grfx::Attachme
 class DeviceSwapchainWrapImpl : public DeviceSwapchainWrap
 {
 public:
-    static std::unique_ptr<DeviceSwapchainWrap> Create(grfx::Swapchain* swapchain);
-
-public:
     uint32_t     GetImageCount() const final;
     grfx::Format GetColorFormat() const final;
     grfx::Format GetDepthFormat() const final;
@@ -245,22 +242,30 @@ public:
 
     grfx::Device* GetDevice() const final;
 
-    DeviceSwapchainWrapImpl(grfx::Swapchain* swapchain);
+    DeviceSwapchainWrapImpl(grfx::Swapchain* swapchain, bool absorbError = true);
+
+    Result ResizeSwapchain(uint32_t w, uint32_t h) final;
+    Result ReplaceSwapchain(grfx::Swapchain* swapchain) final;
+
+    bool NeedUpdate() final;
+    void SetNeedUpdate() final;
 
 private:
-    grfx::Swapchain* mSwapchain = nullptr;
+    grfx::Swapchain* mSwapchain   = nullptr;
+    bool             mNeedUpdate  = false;
+    bool             mAbsorbError = true;
 };
 
-std::unique_ptr<DeviceSwapchainWrap> DeviceSwapchainWrap::Create(grfx::Swapchain* swapchain)
+std::unique_ptr<DeviceSwapchainWrap> DeviceSwapchainWrap::Create(grfx::Swapchain* swapchain, bool absorbError)
 {
     std::unique_ptr<DeviceSwapchainWrap> swapchainWrap =
-        std::unique_ptr<DeviceSwapchainWrap>(new WithRenderPass<DeviceSwapchainWrapImpl>(swapchain));
+        std::unique_ptr<DeviceSwapchainWrap>(new WithRenderPass<DeviceSwapchainWrapImpl>(swapchain, absorbError));
     swapchainWrap->OnUpdate();
     return swapchainWrap;
 }
 
-DeviceSwapchainWrapImpl::DeviceSwapchainWrapImpl(grfx::Swapchain* swapchain)
-    : mSwapchain(swapchain)
+DeviceSwapchainWrapImpl::DeviceSwapchainWrapImpl(grfx::Swapchain* swapchain, bool absorbError)
+    : mSwapchain(swapchain), mAbsorbError(absorbError)
 {
 }
 
@@ -305,7 +310,29 @@ Result DeviceSwapchainWrapImpl::AcquireNextImage(
     grfx::Fence*     pFence,
     uint32_t*        pImageIndex)
 {
-    return mSwapchain->AcquireNextImage(timeout, pSemaphore, pFence, pImageIndex);
+    Result ppxres = mSwapchain->AcquireNextImage(timeout, pSemaphore, pFence, pImageIndex);
+    if (ppxres == ppx::ERROR_OUT_OF_DATE) {
+        mNeedUpdate = true;
+
+        if (mAbsorbError) {
+            *pImageIndex = 0;
+
+            grfx::SubmitInfo sInfo     = {};
+            sInfo.ppCommandBuffers     = nullptr;
+            sInfo.commandBufferCount   = 0;
+            sInfo.pFence               = pFence;
+            sInfo.ppSignalSemaphores   = &pSemaphore;
+            sInfo.signalSemaphoreCount = 1;
+            GetDevice()->GetGraphicsQueue()->Submit(&sInfo);
+        }
+
+        return mAbsorbError ? ppx::SUCCESS : ppxres;
+    }
+    if (ppxres == ppx::ERROR_SUBOPTIMAL) {
+        mNeedUpdate = true;
+        return mAbsorbError ? ppx::SUCCESS : ppxres;
+    }
+    return ppxres;
 }
 
 Result DeviceSwapchainWrapImpl::Present(
@@ -313,12 +340,48 @@ Result DeviceSwapchainWrapImpl::Present(
     uint32_t                      waitSemaphoreCount,
     const grfx::Semaphore* const* ppWaitSemaphores)
 {
-    return mSwapchain->Present(imageIndex, waitSemaphoreCount, ppWaitSemaphores);
+    Result ppxres = mSwapchain->Present(imageIndex, waitSemaphoreCount, ppWaitSemaphores);
+    if (ppxres == ppx::ERROR_OUT_OF_DATE) {
+        mNeedUpdate = true;
+        return mAbsorbError ? ppx::SUCCESS : ppxres;
+    }
+    if (ppxres == ppx::ERROR_SUBOPTIMAL) {
+        mNeedUpdate = true;
+        return mAbsorbError ? ppx::SUCCESS : ppxres;
+    }
+    return ppxres;
 }
 
 grfx::Device* DeviceSwapchainWrapImpl::GetDevice() const
 {
     return mSwapchain->GetDevice();
+}
+
+Result DeviceSwapchainWrapImpl::ResizeSwapchain(uint32_t w, uint32_t h)
+{
+    Result ppxres = mSwapchain->Resize(w, h);
+    if (ppxres == ppx::SUCCESS) {
+        mNeedUpdate = false;
+        return OnUpdate();
+    }
+    return ppxres;
+}
+
+Result DeviceSwapchainWrapImpl::ReplaceSwapchain(grfx::Swapchain* swapchain)
+{
+    mSwapchain  = swapchain;
+    mNeedUpdate = false;
+    return OnUpdate();
+}
+
+bool DeviceSwapchainWrapImpl::NeedUpdate()
+{
+    return mNeedUpdate;
+}
+
+void DeviceSwapchainWrapImpl::SetNeedUpdate()
+{
+    mNeedUpdate = true;
 }
 
 // -------------------------------------------------------------------------------------------------

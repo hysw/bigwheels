@@ -87,7 +87,12 @@ protected:
 class DeviceSwapchainWrap : public Swapchain
 {
 public:
-    static std::unique_ptr<DeviceSwapchainWrap> Create(grfx::Swapchain* swapchain);
+    static std::unique_ptr<DeviceSwapchainWrap> Create(grfx::Swapchain* swapchain, bool absorbError = true);
+
+    virtual Result ResizeSwapchain(uint32_t w, uint32_t h) = 0;
+    virtual Result ReplaceSwapchain(grfx::Swapchain*)      = 0;
+    virtual bool   NeedUpdate()                            = 0;
+    virtual void   SetNeedUpdate()                         = 0;
 };
 
 } // namespace ppx

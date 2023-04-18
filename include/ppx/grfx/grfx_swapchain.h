@@ -120,6 +120,8 @@ public:
     grfx::Format GetColorFormat() const { return mCreateInfo.colorFormat; }
     grfx::Format GetDepthFormat() const { return mCreateInfo.depthFormat; }
 
+    Result Resize(uint32_t width, uint32_t height);
+
     Result GetColorImage(uint32_t imageIndex, grfx::Image** ppImage) const;
     Result GetDepthImage(uint32_t imageIndex, grfx::Image** ppImage) const;
 
@@ -170,6 +172,8 @@ protected:
         uint32_t                      imageIndex,
         uint32_t                      waitSemaphoreCount,
         const grfx::Semaphore* const* ppWaitSemaphores) = 0;
+
+    virtual Result ResizeInternal(uint32_t width, uint32_t height);
 
 private:
     Result AcquireNextImageHeadless(

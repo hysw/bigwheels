@@ -265,7 +265,7 @@ struct ApplicationSettings
         uint32_t    width     = 0;
         uint32_t    height    = 0;
         std::string title     = "";
-        bool        resizable = false;
+        bool        resizable = true;
     } window;
 
     struct
@@ -445,6 +445,7 @@ private:
     Result InitializeGrfxDevice();
     Result InitializeGrfxSurface();
     Result InitializeGrfxSwapchain();
+    Result UpdateSwapchain();
     Result InitializeImGui();
     void   ShutdownImGui();
     void   StopGrfx();

@@ -864,7 +864,7 @@ Result Application::InitializeGrfxSwapchain()
         }
 #if defined(PPX_BUILD_XR)
         if (mSettings.xr.enable && mSettings.xr.enableDebugCapture) {
-            mDebugCaptureSwapchainIndex = static_cast<uint32_t>(mDeviceSwapchain.size());
+            mDebugCaptureSwapchainIndex = static_cast<uint32_t>(mSwapchain.size());
             // The window size could be smaller than the requested one in glfwCreateWindow
             // So the final swapchain size for window needs to be adjusted
             // In the case of debug capture, we don't care about the window size after creating the dummy window
@@ -875,9 +875,12 @@ Result Application::InitializeGrfxSwapchain()
 #endif
         mDeviceSwapchain.push_back(swapchain);
     }
-    for (auto swapchain : mDeviceSwapchain) {
-        mDeviceSwapchainWrap.push_back(DeviceSwapchainWrap::Create(swapchain));
+    if (mDeviceSwapchainWrap.empty()) {
+        for (auto swapchain : mDeviceSwapchain) {
+            mDeviceSwapchainWrap.push_back(DeviceSwapchainWrap::Create(swapchain));
+        }
     }
+
     if (mSettings.enableImGui && !mImGuiSwapchainHook && !mSettings.xr.enable && mDeviceSwapchainWrap.size() == 1) {
         // Still need some time to figure out XR implementation of this.
         mImGuiSwapchainHook = Swapchain::PresentHook(mDeviceSwapchainWrap.back().get(), [this](grfx::CommandBuffer* pCommandBuffer) {
@@ -886,6 +889,54 @@ Result Application::InitializeGrfxSwapchain()
             DrawImGui(pCommandBuffer);
         });
     }
+    return ppx::SUCCESS;
+}
+
+Result Application::UpdateSwapchain()
+{
+#if defined(PPX_BUILD_XR)
+    if (mSettings.xr.enable) {
+        // Resize xr swapchain is not supported
+        return ppx::SUCCESS;
+    }
+#endif
+    if (mDeviceSwapchainWrap.empty()) {
+        return ppx::SUCCESS;
+    }
+    PPX_ASSERT_MSG(mDeviceSwapchainWrap.size() == 1, "We should have exactly one swapchain");
+    DeviceSwapchainWrap* swapchain = mDeviceSwapchainWrap[0].get();
+    if (!swapchain->NeedUpdate()) {
+        return ppx::SUCCESS;
+    }
+
+    ppx::Result ppxres = ppx::ERROR_FAILED;
+
+    ppxres = swapchain->ResizeSwapchain(mSettings.window.width, mSettings.window.height);
+    if (ppxres != ERROR_UNSUPPORTED_API) {
+        // Either success, or something went wrong.
+        return ppxres;
+    }
+
+    // Recreate surface/swapchain if swapchain resize is not supported.
+    mDevice->WaitIdle();
+    for (auto& deviceSwapchain : mDeviceSwapchain) {
+        mDevice->DestroySwapchain(deviceSwapchain);
+        deviceSwapchain.Reset();
+    }
+    mDeviceSwapchain.clear();
+    if (mSurface) {
+        mInstance->DestroySurface(mSurface);
+        mSurface.Reset();
+    }
+    ppxres = InitializeGrfxSurface();
+    if (Failed(ppxres)) {
+        return ppxres;
+    }
+    ppxres = InitializeGrfxSwapchain();
+    if (Failed(ppxres)) {
+        return ppxres;
+    }
+    swapchain->ReplaceSwapchain(mDeviceSwapchain.back().Get());
     return ppx::SUCCESS;
 }
 
@@ -1179,6 +1230,9 @@ void Application::ResizeCallback(uint32_t width, uint32_t height)
         mSettings.window.width  = width;
         mSettings.window.height = height;
         mWindowSurfaceInvalid   = ((width == 0) || (height == 0));
+        if (!mDeviceSwapchainWrap.empty()) {
+            mDeviceSwapchainWrap.back()->SetNeedUpdate();
+        }
     }
 }
 
@@ -1433,6 +1487,10 @@ int Application::Run(int argc, char** argv)
 
     mRunningHeadless = mSettings.headless;
     while (IsRunning()) {
+        if (Failed(UpdateSwapchain())) {
+            return EXIT_FAILURE;
+        }
+
         // Frame start
         mFrameStartTime = static_cast<float>(mTimer.MillisSinceStart());
 
