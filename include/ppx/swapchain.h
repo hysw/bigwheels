@@ -76,6 +76,9 @@ public:
     grfx::RenderPassPtr GetRenderPass(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp = grfx::ATTACHMENT_LOAD_OP_CLEAR) const;
 
     virtual grfx::Device* GetDevice() const = 0;
+
+public:
+    static std::unique_ptr<Swapchain> PresentHook(Swapchain* swapchain, std::function<void(grfx::CommandBuffer*)> f);
 };
 
 class DeviceSwapchainWrap : public Swapchain

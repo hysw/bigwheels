@@ -190,6 +190,7 @@ public:
     virtual void Render() override;
     virtual void KeyDown(ppx::KeyCode key) override;
     virtual void KeyUp(ppx::KeyCode key) override;
+    virtual void DrawDebugInfo(std::function<void(void)> fn) override;
 
 private:
     struct PerFrame
@@ -740,10 +741,6 @@ void ProjApp::Render()
                 frame.cmd->BindVertexBuffers(entity.Mesh());
                 frame.cmd->DrawIndexed(entity.Mesh()->GetIndexCount());
             }
-
-            // Draw ImGui
-            DrawDebugInfo([this]() { DrawCameraInfo(); DrawInstructions(); });
-            DrawImGui(frame.cmd);
         }
         frame.cmd->EndRenderPass();
         frame.cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_PRESENT);
@@ -762,6 +759,15 @@ void ProjApp::Render()
     PPX_CHECKED_CALL(GetGraphicsQueue()->Submit(&submitInfo));
 
     PPX_CHECKED_CALL(swapchain->Present(imageIndex, 1, &frame.renderCompleteSemaphore));
+}
+
+void ProjApp::DrawDebugInfo(std::function<void(void)> fn)
+{
+    Application::DrawDebugInfo([this, fn](){
+        DrawCameraInfo();
+        DrawInstructions();
+        fn();
+    });
 }
 
 SETUP_APPLICATION(ProjApp)

@@ -330,10 +330,6 @@ void ProjApp::Render()
             frame.cmd->BindIndexBuffer(mWirePlane.mesh);
             frame.cmd->BindVertexBuffers(mWirePlane.mesh);
             frame.cmd->DrawIndexed(mWirePlane.mesh->GetIndexCount());
-
-            // Draw ImGui
-            DrawDebugInfo();
-            DrawImGui(frame.cmd);
         }
         frame.cmd->EndRenderPass();
         frame.cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_PRESENT);

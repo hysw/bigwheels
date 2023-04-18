@@ -33,9 +33,7 @@ public:
     virtual void MouseDown(int32_t x, int32_t y, uint32_t buttons) override;
     virtual void MouseUp(int32_t x, int32_t y, uint32_t buttons) override;
     virtual void Render() override;
-
-private:
-    void DrawGui();
+    virtual void DrawAdditionalDebugInfo() override;
 
 private:
     struct PerFrame
@@ -143,9 +141,7 @@ void ProjApp::Render()
         frame.cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_PRESENT, grfx::RESOURCE_STATE_RENDER_TARGET);
         frame.cmd->BeginRenderPass(&beginInfo);
         {
-            // Draw ImGui
-            DrawDebugInfo([this]() { this->DrawGui(); });
-            DrawImGui(frame.cmd);
+            // Nothing to do here.
         }
         frame.cmd->EndRenderPass();
         frame.cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_PRESENT);
@@ -166,7 +162,7 @@ void ProjApp::Render()
     PPX_CHECKED_CALL(swapchain->Present(imageIndex, 1, &frame.renderCompleteSemaphore));
 }
 
-void ProjApp::DrawGui()
+void ProjApp::DrawAdditionalDebugInfo()
 {
     if (ImGui::Begin("Mouse Info")) {
         ImGui::Columns(2);

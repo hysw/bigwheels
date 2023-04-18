@@ -564,13 +564,6 @@ void FishTornadoApp::RenderSceneUsingSingleCommandBuffer(
 #endif
 
             mOcean.DrawForward(frameIndex, frame.cmd);
-
-            // Draw ImGui
-            DrawDebugInfo([this]() { this->DrawGui(); });
-#if defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
-            DrawProfilerGrfxApiFunctions();
-#endif // defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
-            DrawImGui(frame.cmd);
         }
         frame.cmd->EndRenderPass();
         frame.cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_PRESENT);
@@ -780,13 +773,6 @@ void FishTornadoApp::RenderSceneUsingMultipleCommandBuffers(
 #endif
 
             mOcean.DrawForward(frameIndex, frame.cmd);
-
-            // Draw ImGui
-            DrawDebugInfo([this]() { this->DrawGui(); });
-#if defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
-            DrawProfilerGrfxApiFunctions();
-#endif // defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
-            DrawImGui(frame.cmd);
         }
         frame.cmd->EndRenderPass();
         frame.cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_PRESENT);
@@ -975,4 +961,12 @@ void FishTornadoApp::DrawGui()
     if (mForceSingleCommandBuffer) {
         ImGui::EndDisabled();
     }
+}
+
+void FishTornadoApp::DrawDebugInfo(std::function<void(void)> fn)
+{
+    Application::DrawDebugInfo([this, fn]() { this->DrawGui(); fn(); });
+#if defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
+    DrawProfilerGrfxApiFunctions();
+#endif // defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
 }

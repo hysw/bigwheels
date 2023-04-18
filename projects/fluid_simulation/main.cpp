@@ -104,10 +104,6 @@ void ProjApp::Render()
         frame.cmd->BeginRenderPass(renderPass);
         {
             mSim->Render(frame);
-
-            // Draw ImGui.
-            DrawDebugInfo();
-            DrawImGui(frame.cmd);
         }
         frame.cmd->EndRenderPass();
         frame.cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, ppx::grfx::RESOURCE_STATE_RENDER_TARGET, ppx::grfx::RESOURCE_STATE_PRESENT);

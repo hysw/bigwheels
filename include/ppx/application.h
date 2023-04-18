@@ -341,9 +341,10 @@ protected:
 
     void TakeScreenshot();
 
-    void DrawImGui(grfx::CommandBuffer* pCommandBuffer);
-    void DrawDebugInfo(std::function<void(void)> drawAdditionalFn = []() {});
-    void DrawProfilerGrfxApiFunctions();
+    void         DrawImGui(grfx::CommandBuffer* pCommandBuffer);
+    virtual void DrawDebugInfo(std::function<void(void)> drawAdditionalFn = []() {});
+    virtual void DrawAdditionalDebugInfo() {}
+    void         DrawProfilerGrfxApiFunctions();
 
 public:
     int  Run(int argc, char** argv);
@@ -391,10 +392,19 @@ public:
     // For non-XR applications, "index" should be always 0.
     Swapchain* GetSwapchain(uint32_t index = 0) const
     {
+        if (index == 0) {
+            if (mImGuiSwapchainHook) {
+                return mImGuiSwapchainHook.get();
+            }
+        }
         PPX_ASSERT_MSG(index < mDeviceSwapchainWrap.size(), "Invalid Swapchain Index!");
         return mDeviceSwapchainWrap[index].get();
     }
-
+    Swapchain* GetImGuiSwapchain() const
+    {
+        PPX_ASSERT_MSG(!mDeviceSwapchainWrap.empty(), "Invalid Swapchain Index!");
+        return mDeviceSwapchainWrap.back().get();
+    }
     float    GetElapsedSeconds() const;
     float    GetPrevFrameTime() const { return mPreviousFrameTime; }
     uint64_t GetFrameCount() const { return mFrameCount; }
@@ -480,6 +490,7 @@ private:
 
     // Requires enableDisplay
     std::vector<std::unique_ptr<DeviceSwapchainWrap>> mDeviceSwapchainWrap;
+    std::unique_ptr<Swapchain>                        mImGuiSwapchainHook;
 
     uint64_t          mFrameCount        = 0;
     uint32_t          mSwapchainIndex    = 0;

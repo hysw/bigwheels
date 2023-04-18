@@ -29,9 +29,9 @@ public:
     virtual void Config(ppx::ApplicationSettings& settings) override;
     virtual void Setup() override;
     virtual void Render() override;
+    virtual void DrawAdditionalDebugInfo() override;
 
 private:
-    void DrawGui();
     struct PerFrame
     {
         ppx::grfx::CommandBufferPtr cmd;
@@ -327,10 +327,6 @@ void ProjApp::Render()
 
             frame.cmd->BindGraphicsDescriptorSets(mPipelineInterface, 1, &mDescriptorSet[1]);
             frame.cmd->Draw(6, 1, 0, 0);
-
-            // Draw ImGui
-            DrawDebugInfo([this]() { this->DrawGui(); });
-            DrawImGui(frame.cmd);
         }
         frame.cmd->EndRenderPass();
         frame.cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_PRESENT);
@@ -351,7 +347,7 @@ void ProjApp::Render()
     PPX_CHECKED_CALL(swapchain->Present(imageIndex, 1, &frame.renderCompleteSemaphore));
 }
 
-void ProjApp::DrawGui()
+void ProjApp::DrawAdditionalDebugInfo()
 {
     ImGui::Separator();
     ImGui::Text("Left generated in:");

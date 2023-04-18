@@ -161,6 +161,7 @@ private:
         Swapchain*& swapchain,
         uint32_t    imageIndex);
     void DrawGui();
+    void DrawDebugInfo(std::function<void(void)> fn) override;
 };
 
 #endif // FISHTORNADO_H

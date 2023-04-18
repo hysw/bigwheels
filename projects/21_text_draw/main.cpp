@@ -183,13 +183,6 @@ void ProjApp::Render()
 
             mStaticText->Draw(frame.cmd);
             mDynamicText->Draw(frame.cmd);
-
-            // Draw ImGui
-            //DrawDebugInfo();
-#if defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
-            DrawProfilerGrfxApiFunctions();
-#endif // defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS) \
-    //DrawImGui(frame.cmd);
         }
         frame.cmd->EndRenderPass();
         frame.cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_PRESENT);

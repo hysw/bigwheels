@@ -184,4 +184,163 @@ grfx::Device* DeviceSwapchainWrapImpl::GetDevice() const
     return mSwapchain->GetDevice();
 }
 
+// -------------------------------------------------------------------------------------------------
+// SwapchainWrap, deligate to another swapchain like object
+
+class SwapchainWrap : public Swapchain
+{
+public:
+    SwapchainWrap(Swapchain* impl)
+        : mImpl(impl) {}
+
+    uint32_t     GetImageCount() const override { return mImpl->GetImageCount(); }
+    grfx::Format GetColorFormat() const override { return mImpl->GetColorFormat(); }
+    grfx::Format GetDepthFormat() const override { return mImpl->GetDepthFormat(); }
+
+    using Swapchain::GetColorImage;
+    using Swapchain::GetDepthImage;
+
+    Result GetColorImage(uint32_t imageIndex, grfx::Image** ppImage) const override { return mImpl->GetColorImage(imageIndex, ppImage); }
+    Result GetDepthImage(uint32_t imageIndex, grfx::Image** ppImage) const override { return mImpl->GetDepthImage(imageIndex, ppImage); }
+
+    // Full image width/height, might be larger than the render area
+    uint32_t GetImageWidth() const override { return mImpl->GetImageWidth(); }
+    uint32_t GetImageHeight() const override { return mImpl->GetImageHeight(); }
+
+    using Swapchain::GetRenderPass;
+    Result GetRenderPass(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, grfx::RenderPass** ppRenderPass) const override
+    {
+        return mImpl->GetRenderPass(imageIndex, loadOp, ppRenderPass);
+    }
+
+    Result AcquireNextImage(
+        uint64_t         timeout,    // Nanoseconds
+        grfx::Semaphore* pSemaphore, // Wait sempahore
+        grfx::Fence*     pFence,     // Wait fence
+        uint32_t*        pImageIndex) override
+    {
+        return mImpl->AcquireNextImage(timeout, pSemaphore, pFence, pImageIndex);
+    }
+
+    Result Present(
+        uint32_t                      imageIndex,
+        uint32_t                      waitSemaphoreCount,
+        const grfx::Semaphore* const* ppWaitSemaphores) override
+    {
+        return mImpl->Present(imageIndex, waitSemaphoreCount, ppWaitSemaphores);
+    }
+
+    grfx::Rect GetRenderArea() const override { return mImpl->GetRenderArea(); }
+
+    grfx::Device* GetDevice() const final { return mImpl->GetDevice(); }
+
+protected:
+    Swapchain* mImpl;
+};
+
+// -------------------------------------------------------------------------------------------------
+// PresentHook
+namespace {
+
+template <typename T>
+class WithPostProcess : public T
+{
+public:
+    using T::T;
+    Result Present(
+        uint32_t                      imageIndex,
+        uint32_t                      waitSemaphoreCount,
+        const grfx::Semaphore* const* ppWaitSemaphores) final
+    {
+        grfx::CommandBufferPtr commandBuffer = mCommandBuffers[imageIndex];
+
+        commandBuffer->Begin();
+        this->RecordCommands(imageIndex, commandBuffer);
+        commandBuffer->End();
+
+        grfx::Semaphore* pSignalSemaphore = mSemaphores[imageIndex].Get();
+
+        grfx::SubmitInfo sInfo     = {};
+        sInfo.ppCommandBuffers     = &commandBuffer;
+        sInfo.commandBufferCount   = 1;
+        sInfo.ppWaitSemaphores     = ppWaitSemaphores;
+        sInfo.waitSemaphoreCount   = waitSemaphoreCount;
+        sInfo.ppSignalSemaphores   = &pSignalSemaphore;
+        sInfo.signalSemaphoreCount = 1;
+        mQueue->Submit(&sInfo);
+
+        return T::Present(imageIndex, 1, &pSignalSemaphore);
+    }
+
+    void InitPostProcess(grfx::Queue* queue)
+    {
+        mQueue = queue;
+
+        for (uint32_t i = 0; i < this->GetImageCount(); ++i) {
+            grfx::CommandBufferPtr commandBuffer = nullptr;
+            mQueue->CreateCommandBuffer(&commandBuffer, 0, 0);
+            mCommandBuffers.push_back(commandBuffer);
+        }
+        grfx::Device* device = mQueue->GetDevice();
+        for (uint32_t i = 0; i < this->GetImageCount(); i++) {
+            grfx::SemaphoreCreateInfo info = {};
+            grfx::SemaphorePtr        pSemaphore;
+            PPX_CHECKED_CALL(device->CreateSemaphore(&info, &pSemaphore));
+            mSemaphores.push_back(pSemaphore);
+        }
+    }
+
+private:
+    grfx::Queue* mQueue = nullptr;
+
+    std::vector<grfx::CommandBufferPtr> mCommandBuffers;
+    std::vector<grfx::SemaphorePtr>     mSemaphores;
+};
+
+} // namespace
+
+// -------------------------------------------------------------------------------------------------
+// PresentHook
+
+class SwapchainPresentHook : public SwapchainWrap
+{
+public:
+    SwapchainPresentHook(Swapchain* impl, std::function<void(grfx::CommandBuffer*)> f)
+        : SwapchainWrap(impl), mOnPresent(f) {}
+
+    void RecordCommands(uint32_t imageIndex, grfx::CommandBuffer* commandBuffer)
+    {
+        commandBuffer->TransitionImageLayout(GetColorImage(imageIndex), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_PRESENT, grfx::RESOURCE_STATE_RENDER_TARGET);
+        {
+            grfx::RenderPassPtr renderPass = GetRenderPass(imageIndex, grfx::ATTACHMENT_LOAD_OP_LOAD);
+
+            grfx::RenderPassBeginInfo beginInfo = {};
+            beginInfo.pRenderPass               = renderPass;
+            beginInfo.renderArea                = renderPass->GetRenderArea();
+            beginInfo.RTVClearCount             = 1;
+            beginInfo.RTVClearValues[0]         = {{0.5, 0.5, 0.5, 0}};
+            beginInfo.DSVClearValue             = {1.0f, 0xFF};
+
+            commandBuffer->BeginRenderPass(&beginInfo);
+            if (mOnPresent) {
+                commandBuffer->SetViewports(GetViewport());
+                commandBuffer->SetScissors(GetRenderArea());
+                mOnPresent(commandBuffer);
+            }
+            commandBuffer->EndRenderPass();
+        }
+        commandBuffer->TransitionImageLayout(GetColorImage(imageIndex), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_PRESENT);
+    }
+
+private:
+    std::function<void(grfx::CommandBuffer*)> mOnPresent;
+};
+
+std::unique_ptr<Swapchain> Swapchain::PresentHook(Swapchain* swapchain, std::function<void(grfx::CommandBuffer*)> f)
+{
+    auto res = std::make_unique<WithPostProcess<SwapchainPresentHook>>(swapchain, f);
+    res->InitPostProcess(swapchain->GetDevice()->GetGraphicsQueue());
+    return res;
+}
+
 } // namespace ppx

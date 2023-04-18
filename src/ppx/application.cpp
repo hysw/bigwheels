@@ -878,7 +878,14 @@ Result Application::InitializeGrfxSwapchain()
     for (auto swapchain : mDeviceSwapchain) {
         mDeviceSwapchainWrap.push_back(DeviceSwapchainWrap::Create(swapchain));
     }
-
+    if (mSettings.enableImGui && !mImGuiSwapchainHook && !mSettings.xr.enable && mDeviceSwapchainWrap.size() == 1) {
+        // Still need some time to figure out XR implementation of this.
+        mImGuiSwapchainHook = Swapchain::PresentHook(mDeviceSwapchainWrap.back().get(), [this](grfx::CommandBuffer* pCommandBuffer) {
+            // Draw ImGui
+            DrawDebugInfo([this]() { DrawAdditionalDebugInfo(); });
+            DrawImGui(pCommandBuffer);
+        });
+    }
     return ppx::SUCCESS;
 }
 
@@ -936,6 +943,7 @@ void Application::StopGrfx()
 void Application::ShutdownGrfx()
 {
     if (mInstance) {
+        mImGuiSwapchainHook.reset();
         mDeviceSwapchainWrap.clear();
 
         for (auto& sc : mDeviceSwapchain) {

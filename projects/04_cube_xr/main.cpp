@@ -350,12 +350,6 @@ void ProjApp::Render()
             frame.cmd->BindGraphicsPipeline(mPipeline);
             frame.cmd->BindVertexBuffers(1, &mVertexBuffer, &mVertexBinding.GetStride());
             frame.cmd->Draw(36, 1, 0, 0);
-
-            if (!IsXrEnabled()) {
-                // Draw ImGui
-                DrawDebugInfo();
-                DrawImGui(frame.cmd);
-            }
         }
         frame.cmd->EndRenderPass();
         if (!IsXrEnabled()) {

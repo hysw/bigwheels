@@ -28,6 +28,7 @@ public:
     virtual void Config(ppx::ApplicationSettings& settings) override;
     virtual void Setup() override;
     virtual void Render() override;
+    virtual void DrawDebugInfo(std::function<void(void)> fn) override;
 
 private:
     struct PerFrame
@@ -182,13 +183,6 @@ void ProjApp::Render()
             frame.cmd->BindGraphicsPipeline(mPipeline);
             frame.cmd->BindVertexBuffers(1, &mVertexBuffer, &mVertexBinding.GetStride());
             frame.cmd->Draw(3, 1, 0, 0);
-
-            // Draw ImGui
-            DrawDebugInfo();
-#if defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
-            DrawProfilerGrfxApiFunctions();
-#endif // defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
-            DrawImGui(frame.cmd);
         }
         frame.cmd->EndRenderPass();
         frame.cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_PRESENT);
@@ -207,6 +201,14 @@ void ProjApp::Render()
     PPX_CHECKED_CALL(GetGraphicsQueue()->Submit(&submitInfo));
 
     PPX_CHECKED_CALL(swapchain->Present(imageIndex, 1, &frame.renderCompleteSemaphore));
+}
+
+void ProjApp::DrawDebugInfo(std::function<void(void)> fn)
+{
+    Application::DrawDebugInfo(fn);
+#if defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
+    DrawProfilerGrfxApiFunctions();
+#endif // defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
 }
 
 SETUP_APPLICATION(ProjApp)

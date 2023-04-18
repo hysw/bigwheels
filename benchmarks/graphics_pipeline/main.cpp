@@ -830,8 +830,6 @@ void ProjApp::Render()
                     frame.cmd->DrawIndexed(renderable.pPrimitive->mesh->GetIndexCount());
                 }
             }
-
-            DrawImGui(frame.cmd);
         }
         frame.cmd->EndRenderPass();
         frame.cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_PRESENT);

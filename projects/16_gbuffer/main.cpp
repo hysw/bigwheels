@@ -40,6 +40,7 @@ public:
     virtual void MouseMove(int32_t x, int32_t y, int32_t dx, int32_t dy, uint32_t buttons) override;
     virtual void Shutdown() override;
     virtual void Render() override;
+    virtual void DrawAdditionalDebugInfo() override;
 
 private:
     struct PerFrame
@@ -116,7 +117,6 @@ private:
     void SetupDebugDraw();
     void SetupDrawToSwapchain();
     void UpdateConstants();
-    void DrawGui();
 };
 
 void ProjApp::Config(ppx::ApplicationSettings& settings)
@@ -838,10 +838,6 @@ void ProjApp::Render()
         {
             // Draw gbuffer light output to swapchain
             frame.cmd->Draw(mDrawToSwapchain, 1, &mDrawToSwapchainSet);
-
-            // Draw ImGui
-            DrawDebugInfo([this]() { this->DrawGui(); });
-            DrawImGui(frame.cmd);
         }
         frame.cmd->EndRenderPass();
         frame.cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_PRESENT);
@@ -869,7 +865,7 @@ void ProjApp::Render()
     PPX_CHECKED_CALL(swapchain->Present(imageIndex, 1, &frame.renderCompleteSemaphore));
 }
 
-void ProjApp::DrawGui()
+void ProjApp::DrawAdditionalDebugInfo()
 {
     ImGui::Separator();
 

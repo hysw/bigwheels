@@ -566,8 +566,6 @@ void OITDemoApp::RecordComposite(grfx::RenderPassPtr renderPass)
     mCommandBuffer->BindGraphicsPipeline(mCompositePipeline);
     mCommandBuffer->Draw(3);
 
-    DrawImGui(mCommandBuffer);
-
     mCommandBuffer->EndRenderPass();
     mCommandBuffer->TransitionImageLayout(
         renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_PRESENT);

@@ -31,6 +31,7 @@ public:
     virtual void Config(ppx::ApplicationSettings& settings) override;
     virtual void Setup() override;
     virtual void Render() override;
+    virtual void DrawAdditionalDebugInfo() override;
 
 private:
     void SetupComposition();
@@ -92,7 +93,6 @@ private:
     std::vector<PerFrame> mPerFrame;
     const uint32_t        mNumFramesInFlight = 2;
 
-    void     DrawGui();
     void     UpdateTransforms(PerFrame& frame);
     uint32_t AcquireFrame(PerFrame& frame);
     void     BlitAndPresent(PerFrame& frame, uint32_t swapchainImageIndex);
@@ -909,10 +909,6 @@ void ProjApp::BlitAndPresent(PerFrame& frame, uint32_t swapchainImageIndex)
         {
             // Draw composed image to swapchain.
             cmd->Draw(mDrawToSwapchainPipeline, 1, &frame.drawToSwapchainData.descriptorSet);
-
-            // Draw ImGui.
-            DrawDebugInfo([this]() { this->DrawGui(); });
-            DrawImGui(cmd);
         }
         cmd->EndRenderPass();
         cmd->TransitionImageLayout(frame.composeDrawPass->GetRenderTargetTexture(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_PIXEL_SHADER_RESOURCE, grfx::RESOURCE_STATE_RENDER_TARGET);
@@ -941,7 +937,7 @@ void ProjApp::BlitAndPresent(PerFrame& frame, uint32_t swapchainImageIndex)
     PPX_CHECKED_CALL(GetSwapchain()->Present(swapchainImageIndex, 1, &frame.renderCompleteSemaphore));
 }
 
-void ProjApp::DrawGui()
+void ProjApp::DrawAdditionalDebugInfo()
 {
     ImGui::Separator();
 

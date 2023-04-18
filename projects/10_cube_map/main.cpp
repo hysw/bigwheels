@@ -32,9 +32,7 @@ public:
     virtual void Setup() override;
     virtual void MouseMove(int32_t x, int32_t y, int32_t dx, int32_t dy, uint32_t buttons) override;
     virtual void Render() override;
-
-private:
-    void DrawGui();
+    virtual void DrawAdditionalDebugInfo() override;
 
 private:
     struct PerFrame
@@ -394,12 +392,6 @@ void ProjApp::Render()
             frame.cmd->BindIndexBuffer(mSkyBox.mesh);
             frame.cmd->BindVertexBuffers(mSkyBox.mesh);
             frame.cmd->DrawIndexed(mSkyBox.mesh->GetIndexCount());
-
-            // Draw ImGui
-            if (GetSettings()->enableImGui) {
-                DrawDebugInfo([this]() { this->DrawGui(); });
-                DrawImGui(frame.cmd);
-            }
         }
         frame.cmd->EndRenderPass();
         frame.cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_PRESENT);
@@ -428,7 +420,7 @@ void ProjApp::Render()
     PPX_CHECKED_CALL(swapchain->Present(imageIndex, 1, &frame.renderCompleteSemaphore));
 }
 
-void ProjApp::DrawGui()
+void ProjApp::DrawAdditionalDebugInfo()
 {
     ImGui::Separator();
 
