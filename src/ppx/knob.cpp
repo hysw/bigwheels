@@ -20,172 +20,254 @@
 namespace ppx {
 
 // -------------------------------------------------------------------------------------------------
-// KnobType
-// -------------------------------------------------------------------------------------------------
-
-std::ostream& operator<<(std::ostream& strm, KnobType kt)
-{
-    const std::string nameKnobType[] = {"Unknown", "Bool_Checkbox"};
-    return strm << nameKnobType[static_cast<int>(kt)];
-}
-
-// -------------------------------------------------------------------------------------------------
-// KnobBoolCheckbox
-// -------------------------------------------------------------------------------------------------
-
-void KnobBoolCheckbox::Draw()
-{
-    bool changed = ImGui::Checkbox(displayName.c_str(), &value);
-    if (changed && callback) {
-        callback(value);
-    }
-}
-
-void KnobBoolCheckbox::Reset()
-{
-    KnobBoolCheckbox::SetBoolValue(defaultValue, false);
-}
-
-bool KnobBoolCheckbox::GetBoolValue()
-{
-    return value;
-}
-
-// Used for when knob value is altered outside of the GUI
-void KnobBoolCheckbox::SetBoolValue(bool newVal, bool updateDefault)
-{
-    value = newVal;
-    if (updateDefault)
-        defaultValue = newVal;
-    if (callback)
-        callback(value);
-}
-
-// -------------------------------------------------------------------------------------------------
 // KnobManager
 // -------------------------------------------------------------------------------------------------
 
 KnobManager::~KnobManager()
 {
-    for (auto pair : knobs) {
-        free(pair.second);
+    for (auto knob : mKnobs) {
+        delete knob;
     }
 }
 
-void KnobManager::Reset()
+void KnobManager::OnCreate(KnobBase* pKnob)
 {
-    for (auto pair : knobs) {
-        pair.second->Reset();
+    if (!pKnob) {
+        return;
+    }
+    InvalidateDrawOrder();
+    size_t knobIndex                      = mKnobs.size();
+    static_cast<KnobBase*>(pKnob)->mIndex = knobIndex;
+    mKnobs.push_back(pKnob);
+    if (!pKnob->GetFlagName().empty()) {
+        mNameMap[pKnob->GetFlagName()] = knobIndex;
     }
 }
 
-Knob* KnobManager::GetKnob(int id, bool silentFail)
+KnobBase* KnobManager::GetKnobInternal(const std::string& name)
 {
-    if (knobs.count(id) == 0) {
-        if (!silentFail) {
-            PPX_LOG_ERROR("could not find knob with id: " << id);
-        }
+    if (name.empty()) {
         return nullptr;
     }
-    return knobs.at(id);
-}
-
-Knob* KnobManager::GetKnob(std::string name, bool silentFail)
-{
-    for (auto pair : knobs) {
-        if (pair.second->GetFlagName() == name) {
-            return pair.second;
+    for (auto knob : mKnobs) {
+        if (name == knob->GetFlagName()) {
+            return knob;
         }
     }
-
-    if (!silentFail)
-        PPX_LOG_ERROR("could not find knob with flag name: " << name);
-
     return nullptr;
-}
-
-void KnobManager::CreateBoolCheckbox(int i, BoolCheckboxConfig config)
-{
-    KnobBoolCheckbox* newKnob = new KnobBoolCheckbox(config);
-    newKnob->SetBoolValue(config.defaultValue, true);
-    KnobManager::InsertKnob(i, newKnob);
-    KnobManager::ConfigureParent(newKnob, config.parentId);
-}
-
-bool KnobManager::GetKnobBoolValue(int id)
-{
-    auto knobPtr = GetKnob(id);
-    return knobPtr ? knobPtr->GetBoolValue() : false;
-}
-
-void KnobManager::SetKnobBoolValue(int id, bool newVal, bool updateDefault)
-{
-    auto knobPtr = GetKnob(id);
-    if (knobPtr)
-        knobPtr->SetBoolValue(newVal, updateDefault);
 }
 
 void KnobManager::DrawAllKnobs(bool inExistingWindow)
 {
     if (!inExistingWindow)
         ImGui::Begin("Knobs");
-    DrawKnobs(drawOrder);
+    DrawKnobs();
     if (!inExistingWindow)
         ImGui::End();
+}
+
+void KnobManager::CalculateDrawOrder()
+{
+    if (firstKnobToDraw < mKnobs.size()) {
+        return;
+    }
+
+    for (size_t i = 0; i < mKnobs.size(); i++) {
+        mKnobs[i]->mFirstChild = KnobBase::kInvalidIndex;
+        mKnobs[i]->mSibling    = KnobBase::kInvalidIndex;
+    }
+
+    for (size_t i = 0; i < mKnobs.size(); i++) {
+        size_t  index             = mKnobs.size() - i - 1;
+        size_t* pParentFirstChild = &firstKnobToDraw;
+        if (mKnobs[index]->mParentIndex < mKnobs.size()) {
+            pParentFirstChild = &mKnobs[mKnobs[index]->mParentIndex]->mFirstChild;
+        }
+        mKnobs[index]->mSibling = *pParentFirstChild;
+        *pParentFirstChild      = index;
+    }
+}
+
+void KnobManager::DrawKnobs()
+{
+    CalculateDrawOrder();
+
+    size_t at = firstKnobToDraw;
+    while (at < mKnobs.size()) {
+        mKnobs[at]->Draw();
+
+        if (mKnobs[at]->mFirstChild < mKnobs.size()) {
+            ImGui::Indent();
+            at = mKnobs[at]->mFirstChild;
+            continue;
+        }
+
+        while (at < mKnobs.size() && !(mKnobs[at]->mSibling < mKnobs.size())) {
+            ImGui::Unindent();
+            at = mKnobs[at]->mParentIndex;
+        }
+
+        if (at < mKnobs.size()) {
+            at = mKnobs[at]->mSibling;
+        }
+    }
 }
 
 std::string KnobManager::GetUsageMsg()
 {
     std::string usageMsg = "\nApplication-specific flags\n";
-    for (auto pair : knobs) {
-        usageMsg += "--" + pair.second->GetFlagName() + ": " + pair.second->GetFlagDesc() + "\n";
+    for (auto pKnob : mKnobs) {
+        if (pKnob->GetFlagName().empty()) {
+            continue;
+        }
+        usageMsg += "--" + pKnob->GetFlagName() + ": " + pKnob->GetFlagDesc() + "\n";
     }
     return usageMsg;
 }
 
 bool KnobManager::ParseOptions(std::unordered_map<std::string, CliOptions::Option>& optionsMap)
 {
+    bool allSucceed = true;
     for (auto pair : optionsMap) {
-        auto  name    = pair.first;
-        auto  opt     = pair.second;
-        Knob* knobPtr = GetKnob(name, true);
-        if (knobPtr) {
-            switch (knobPtr->GetType()) {
-                case KnobType::Bool_Checkbox:
-                    knobPtr->SetBoolValue(opt.GetValueOrDefault(knobPtr->GetBoolValue()));
-                    break;
-            }
+        auto      name    = pair.first;
+        auto      opt     = pair.second;
+        KnobBase* knobPtr = GetKnobInternal(name);
+        if (!knobPtr) {
+            continue;
         }
+        allSucceed = allSucceed && knobPtr->ParseOption(opt);
     }
-    return true;
-}
-
-void KnobManager::InsertKnob(int id, Knob* knobPtr)
-{
-    knobs.insert(std::make_pair(id, knobPtr));
-}
-
-void KnobManager::ConfigureParent(Knob* knobPtr, int parentId)
-{
-    auto parentPtr = GetKnob(parentId, true);
-    if (parentPtr) {
-        parentPtr->AddChild(knobPtr);
-    }
-    else {
-        drawOrder.push_back(knobPtr);
-    }
-}
-
-void KnobManager::DrawKnobs(std::vector<Knob*> knobsToDraw)
-{
-    for (auto knobPtr : knobsToDraw) {
-        knobPtr->Draw();
-        if (!(knobPtr->GetChildren().empty())) {
-            ImGui::Indent();
-            KnobManager::DrawKnobs(knobPtr->GetChildren());
-            ImGui::Unindent();
-        }
-    }
+    return allSucceed;
 }
 
 } // namespace ppx
+
+namespace ppx::knob {
+
+template <typename ValueT>
+class KnobValueImpl : public Knob<ValueT>
+{
+public:
+    typedef ValueT ValueType;
+
+    KnobValueImpl(const KnobConfig& base)
+        : Knob<ValueType>(base) {}
+
+    KnobValueImpl(const KnobConfig& base, const ValueType& defaultValue)
+        : Knob<ValueType>(base), mValue(defaultValue) {}
+
+    const ValueType& GetValue() const override { return mValue; }
+
+    void SetValue(const ValueType& value) override { mValue = value; }
+
+protected:
+    ValueType mValue;
+};
+
+template <typename KnobT>
+class KnobImpl;
+
+// -------------------------------------------------------------------------------------------------
+// Checkbox
+// -------------------------------------------------------------------------------------------------
+
+template <>
+class KnobImpl<Checkbox> : public KnobValueImpl<Checkbox::ValueType>
+{
+public:
+    using KnobValueImpl<Checkbox::ValueType>::KnobValueImpl;
+    void Draw() override
+    {
+        ImGui::Checkbox(GetDisplayName().c_str(), &mValue);
+    }
+    bool ParseOption(const CliOptions::Option& opt) override
+    {
+        mValue = opt.GetValueOrDefault<bool>(mValue);
+        return true;
+    }
+};
+
+Checkbox::PtrType Checkbox::Create(const KnobConfig& base, ValueType defaultValue)
+{
+    return new KnobImpl<Checkbox>(base, defaultValue);
+}
+
+// -------------------------------------------------------------------------------------------------
+// Combo selector
+// -------------------------------------------------------------------------------------------------
+
+template <>
+class KnobImpl<Combo> : public KnobValueImpl<Combo::ValueType>
+{
+public:
+    KnobImpl(const KnobConfig& base, ValueType defaultValue, const std::vector<std::string>& values)
+        : KnobValueImpl(base, defaultValue)
+    {
+        std::vector<size_t> offsets;
+        for (auto& value : values) {
+            offsets.push_back(mStorage.size());
+            mStorage.append(value);
+            mStorage.push_back('\0');
+        }
+
+        const char* pStringTable = mStorage.data();
+        for (auto offset : offsets) {
+            mValues.push_back(pStringTable + offset);
+        }
+    }
+
+    void Draw() override
+    {
+        ImGui::Combo(GetDisplayName().c_str(), &mValue, mValues.data(), static_cast<int>(mValues.size()));
+    }
+
+    bool ParseOption(const CliOptions::Option& opt) override
+    {
+        {
+            std::string newValue = opt.GetValueOrDefault<std::string>("");
+            auto        iter     = std::find(mValues.begin(), mValues.end(), newValue);
+            if (iter != mValues.end()) {
+                mValue = static_cast<int32_t>(iter - mValues.begin());
+                return true;
+            }
+        }
+        {
+            int32_t newValue = opt.GetValueOrDefault<int32_t>(-1);
+            if (0 <= newValue && newValue < mValues.size()) {
+                mValue = newValue;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // not private: this is implementation
+    std::vector<const char*> mValues;
+    std::string              mStorage;
+};
+
+Combo::PtrType Combo::CreateInternal(const KnobConfig& base, ValueType defaultValue, const std::vector<std::string>& values)
+{
+    return new KnobImpl<Combo>(base, defaultValue, values);
+}
+
+// -------------------------------------------------------------------------------------------------
+// A group header
+// -------------------------------------------------------------------------------------------------
+template <>
+class KnobImpl<Group> : public KnobValueImpl<Group::ValueType>
+{
+public:
+    using KnobValueImpl<Group::ValueType>::KnobValueImpl;
+    void Draw() override
+    {
+        ImGui::Text(GetValue().c_str());
+    }
+};
+
+Group::PtrType Group::Create(const KnobConfig& base, const std::string& title)
+{
+    return new KnobImpl<Group>(base, title);
+}
+
+} // namespace ppx::knob

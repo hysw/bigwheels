@@ -23,140 +23,160 @@
 #include <map>
 #include <unordered_map>
 #include <vector>
+#include <array>
 
 namespace ppx {
-
-// ---------------------------------------------------------------------------------------------
-// KnobType
-// ---------------------------------------------------------------------------------------------
-
-enum class KnobType
-{
-    Unknown,
-    Bool_Checkbox
-};
-
-std::ostream& operator<<(std::ostream& strm, KnobType kt);
-
-// ---------------------------------------------------------------------------------------------
-// KnobConfigs
-// ---------------------------------------------------------------------------------------------
 
 struct KnobConfig
 {
     std::string flagName;
     std::string flagDesc;
     std::string displayName;
-    int         parentId;
 };
 
-// Available knob types for the developer to specify
-struct BoolCheckboxConfig : KnobConfig
-{
-    bool                      defaultValue;
-    std::function<void(bool)> callback;
-};
+class KnobManager;
 
-// ---------------------------------------------------------------------------------------------
-// Knob Classes
-// ---------------------------------------------------------------------------------------------
-
-class Knob
+class KnobBase
 {
 public:
-    Knob() {}
-    Knob(KnobConfig config, KnobType type)
-        : displayName(config.displayName), flagName(config.flagName), flagDesc(config.flagDesc), type(type) {}
-    virtual ~Knob() {}
+    KnobBase(const KnobConfig& config)
+        : mConfig(config) {}
 
-    std::string        GetDisplayName() { return displayName; }
-    std::string        GetFlagName() { return flagName; }
-    std::string        GetFlagDesc() { return flagDesc; }
-    KnobType           GetType() { return type; }
-    void               AddChild(Knob* child) { children.push_back(child); }
-    std::vector<Knob*> GetChildren() { return children; }
+    KnobBase(const KnobBase&)            = delete;
+    KnobBase& operator=(const KnobBase&) = delete;
 
-    virtual void Draw()  = 0;
-    virtual void Reset() = 0;
-
-    // Used for Bool_Checkbox
-    virtual bool GetBoolValue()
-    {
-        PPX_LOG_ERROR("Flag of type " << type << " does not support GetBoolValue()");
-        return false;
-    };
-    virtual void SetBoolValue(bool newVal, bool updateDefault = false)
-    {
-        PPX_LOG_ERROR("Flag of type " << type << " does not support SetBoolValue()");
-    };
+    std::string GetDisplayName() { return mConfig.displayName; }
+    std::string GetFlagName() { return mConfig.flagName; }
+    std::string GetFlagDesc() { return mConfig.flagDesc; }
 
 protected:
-    std::string        displayName;
-    std::string        flagName;
-    std::string        flagDesc;
-    KnobType           type;
-    std::vector<Knob*> children;
-};
-
-class KnobBoolCheckbox
-    : public Knob
-{
-public:
-    KnobBoolCheckbox() {}
-    KnobBoolCheckbox(BoolCheckboxConfig config)
-        : Knob(config, KnobType::Bool_Checkbox)
-    {
-        defaultValue = config.defaultValue;
-        callback     = config.callback;
-    }
-    virtual ~KnobBoolCheckbox() {}
-
-    void Draw() override;
-    void Reset() override;
-
-    bool GetBoolValue() override;
-    void SetBoolValue(bool newVal, bool updateDefault = false) override;
+    friend class KnobManager;
+    virtual ~KnobBase() = default;
+    virtual void Draw() = 0;
+    virtual bool ParseOption(const CliOptions::Option&) { return false; }
 
 private:
-    bool                      value;
-    bool                      defaultValue;
-    std::function<void(bool)> callback;
+    KnobConfig mConfig;
+
+    static constexpr size_t kInvalidIndex = std::numeric_limits<size_t>::max();
+    // KnobManager fields
+    size_t mIndex       = kInvalidIndex;
+    size_t mParentIndex = kInvalidIndex;
+    // Calculated when needed
+    size_t mFirstChild = kInvalidIndex;
+    size_t mSibling    = kInvalidIndex;
 };
+
+template <typename ValueT>
+class Knob : public KnobBase
+{
+public:
+    typedef ValueT ValueType;
+    typedef Knob*  PtrType;
+
+    using KnobBase::KnobBase;
+
+    const ValueType& Get() const { return GetValue(); }
+    void             Set(const ValueType& v) { return SetValue(v); }
+
+    virtual const ValueType& GetValue() const           = 0;
+    virtual void             SetValue(const ValueType&) = 0;
+
+protected:
+    virtual ~Knob() = default;
+};
+
+namespace knob {
+template <typename ValueT>
+struct KnobSpecOf
+{
+    typedef ValueT          ValueType;
+    typedef Knob<ValueType> KnobType;
+    typedef KnobType*       PtrType;
+};
+
+class Checkbox : public KnobSpecOf<bool>
+{
+    friend class KnobManager;
+    static PtrType Create(const KnobConfig&, ValueType);
+};
+
+class Combo : public KnobSpecOf<int32_t>
+{
+    friend class KnobManager;
+
+    static PtrType CreateInternal(const KnobConfig&, ValueType, const std::vector<std::string>&);
+
+    template <typename T>
+    static PtrType Create(const KnobConfig& base, ValueType defaultValue, const T& values)
+    {
+        return CreateInternal(base, defaultValue, std::vector<std::string>(std::begin(values), std::end(values)));
+    }
+};
+
+class Group : public KnobSpecOf<std::string>
+{
+    friend class KnobManager;
+    static PtrType Create(const KnobConfig& base, const std::string& title);
+};
+
+typedef Checkbox::PtrType CheckboxPtr;
+typedef Combo::PtrType    ComboPtr;
+
+} // namespace knob
 
 class KnobManager
 {
+private:
+    template <typename KnobT>
+    using PtrOf = KnobT::PtrType;
+
 public:
-    KnobManager() {}
-    virtual ~KnobManager();
+    KnobManager() = default;
+    ~KnobManager();
 
-    // Utilities
-    bool  IsEmpty() { return knobs.empty(); }
-    void  Reset();
-    Knob* GetKnob(int id, bool silentFail = false);
-    Knob* GetKnob(std::string name, bool silentFail = false);
+    KnobManager(const KnobManager&)            = delete;
+    KnobManager& operator=(const KnobManager&) = delete;
 
-    // Create knobs
-    void CreateBoolCheckbox(int i, BoolCheckboxConfig config);
+public:
+    template <typename KnobT, typename... ArgsT>
+    PtrOf<KnobT> Create(const KnobConfig& baseConfig, ArgsT&&... args)
+    {
+        PtrOf<KnobT> pKnob = KnobT::Create(baseConfig, std::forward<ArgsT>(args)...);
+        OnCreate(pKnob);
+        return pKnob;
+    }
 
-    // Read/Write knobs
-    bool GetKnobBoolValue(int id);
-    void SetKnobBoolValue(int id, bool newVal, bool updateDefault = false);
+    template <typename KnobT>
+    PtrOf<KnobT> GetKnob(const std::string& name)
+    {
+        return dynamic_cast<PtrOf<KnobT>>(GetKnobInternal(name));
+    }
 
-    // ImGUI
-    void DrawAllKnobs(bool inExistingWindow = false);
+    void DrawAllKnobs(bool inExistingWindow);
 
-    // Command-line flags
+    bool        IsEmpty() { return mKnobs.empty(); }
     std::string GetUsageMsg();
     bool        ParseOptions(std::unordered_map<std::string, CliOptions::Option>& optionsMap);
 
-private:
-    void InsertKnob(int id, Knob* knobPtr);
-    void ConfigureParent(Knob* knobPtr, int parentId);
-    void DrawKnobs(std::vector<Knob*> knobsToDraw);
+    void SetParent(KnobBase* pChild, KnobBase* pParent)
+    {
+        InvalidateDrawOrder();
+        pChild->mParentIndex = pParent->mIndex;
+    }
 
 private:
-    std::map<int, Knob*> knobs;
-    std::vector<Knob*>   drawOrder;
+    std::vector<KnobBase*>                  mKnobs;
+    std::unordered_map<std::string, size_t> mNameMap;
+
+    size_t firstKnobToDraw = KnobBase::kInvalidIndex;
+
+    void InvalidateDrawOrder() { firstKnobToDraw = KnobBase::kInvalidIndex; }
+    void CalculateDrawOrder();
+    void DrawKnobs();
+
+    void      OnCreate(KnobBase* pKnob);
+    KnobBase* GetKnobInternal(const std::string& name);
 };
 
 } // namespace ppx

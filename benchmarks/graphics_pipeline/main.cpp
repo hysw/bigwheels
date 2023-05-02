@@ -54,8 +54,8 @@ enum class AppKnobs
 
 struct BenchmarkSettings
 {
-    int32_t vsShaderIndex = 0;
-    int32_t psShaderIndex = 0;
+    knob::ComboPtr vsShaderIndex;
+    knob::ComboPtr psShaderIndex;
 };
 
 class ProjApp
@@ -195,12 +195,17 @@ void ProjApp::Config(ppx::ApplicationSettings& settings)
     settings.grfx.swapchain.depthFormat = grfx::FORMAT_D32_FLOAT;
 
     // Knob definitions
-    BoolCheckboxConfig boolCheckboxConfig = {};
-    boolCheckboxConfig.flagName           = "alpha_blend";
-    boolCheckboxConfig.flagDesc           = "placeholder";
-    boolCheckboxConfig.displayName        = "Alpha Blend";
-    boolCheckboxConfig.defaultValue       = false;
-    knobManager.CreateBoolCheckbox(static_cast<int>(AppKnobs::alpha_blend), boolCheckboxConfig);
+    auto alphaBlend = knobManager.Create<knob::Checkbox>({"alpha_blend", "placeholder", "Alpha Blend"}, false);
+
+    mBenchmarkSettings.vsShaderIndex = knobManager.Create<knob::Combo>({"vs-shader-index", "placeholder", "Vertex Shader"}, 0, kAvailableVsShaders);
+    mBenchmarkSettings.psShaderIndex = knobManager.Create<knob::Combo>({"ps-shader-index", "placeholder", "Pixel Shader"}, 0, kAvailablePsShaders);
+    
+    auto groupAll = knobManager.Create<knob::Group>({}, "Graph Pipeline");
+    auto groupShaders = knobManager.Create<knob::Group>({}, "Shaders");
+    knobManager.SetParent(alphaBlend, groupAll);
+    knobManager.SetParent(groupShaders, groupAll);
+    knobManager.SetParent(mBenchmarkSettings.vsShaderIndex, groupShaders);
+    knobManager.SetParent(mBenchmarkSettings.psShaderIndex, groupShaders);
 }
 
 void ProjApp::LoadTexture(
@@ -639,12 +644,6 @@ void ProjApp::LoadNodes(
 
 void ProjApp::Setup()
 {
-    const auto& cl_options           = GetExtraOptions();
-    mBenchmarkSettings.vsShaderIndex = cl_options.GetExtraOptionValueOrDefault<int32_t>("vs-shader-index", 0);
-    PPX_ASSERT_MSG(mBenchmarkSettings.vsShaderIndex >= 0 && static_cast<uint32_t>(mBenchmarkSettings.vsShaderIndex) < kAvailableVsShaders.size(), "vs-shader-index out of range.");
-    mBenchmarkSettings.psShaderIndex = cl_options.GetExtraOptionValueOrDefault<int32_t>("ps-shader-index", 0);
-    PPX_ASSERT_MSG(mBenchmarkSettings.psShaderIndex >= 0 && static_cast<uint32_t>(mBenchmarkSettings.psShaderIndex) < kAvailablePsShaders.size(), "ps-shader-index out of range.");
-
     // Cameras
     {
         mCamera = PerspCamera(60.0f, GetWindowAspect());
@@ -845,7 +844,7 @@ void ProjApp::Render()
             frame.cmd->SetScissors(GetScissor());
             frame.cmd->SetViewports(GetViewport());
 
-            uint32_t pipeline_index = mBenchmarkSettings.vsShaderIndex * kAvailablePsShaders.size() + mBenchmarkSettings.psShaderIndex;
+            uint32_t pipeline_index = mBenchmarkSettings.vsShaderIndex->Get() * kAvailablePsShaders.size() + mBenchmarkSettings.psShaderIndex->Get();
             // Draw entities
             for (auto& object : mObjects) {
                 for (auto& renderable : object.renderables) {
@@ -887,8 +886,6 @@ void ProjApp::UpdateGUI()
 
     // GUI
     if (ImGui::Begin("Parameters")) {
-        ImGui::Combo("Vertex Shader", &mBenchmarkSettings.vsShaderIndex, kAvailableVsShaders.data(), static_cast<int>(kAvailableVsShaders.size()));
-        ImGui::Combo("Pixel Shader", &mBenchmarkSettings.psShaderIndex, kAvailablePsShaders.data(), static_cast<int>(kAvailablePsShaders.size()));
         knobManager.DrawAllKnobs(true);
     }
     ImGui::End();
