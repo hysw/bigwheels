@@ -195,17 +195,16 @@ void ProjApp::Config(ppx::ApplicationSettings& settings)
     settings.grfx.swapchain.depthFormat = grfx::FORMAT_D32_FLOAT;
 
     // Knob definitions
-    auto alphaBlend = knobManager.Create<knob::Checkbox>({"alpha_blend", "placeholder", "Alpha Blend"}, false);
-
-    mBenchmarkSettings.vsShaderIndex = knobManager.Create<knob::Combo>({"vs-shader-index", "placeholder", "Vertex Shader"}, 0, kAvailableVsShaders);
-    mBenchmarkSettings.psShaderIndex = knobManager.Create<knob::Combo>({"ps-shader-index", "placeholder", "Pixel Shader"}, 0, kAvailablePsShaders);
     
-    auto groupAll = knobManager.Create<knob::Group>({}, "Graph Pipeline");
-    auto groupShaders = knobManager.Create<knob::Group>({}, "Shaders");
-    knobManager.SetParent(alphaBlend, groupAll);
-    knobManager.SetParent(groupShaders, groupAll);
-    knobManager.SetParent(mBenchmarkSettings.vsShaderIndex, groupShaders);
-    knobManager.SetParent(mBenchmarkSettings.psShaderIndex, groupShaders);
+    auto groupAll = knobManager.CreateGroup("Graph Pipeline");
+    auto alphaBlend = groupAll.Create<knob::Checkbox>("alpha_blend", false);
+    auto groupShaders = groupAll.CreateGroup("Shaders");
+    mBenchmarkSettings.vsShaderIndex = groupShaders.Create<knob::Combo>("vs-shader-index", 0, kAvailableVsShaders);
+    mBenchmarkSettings.psShaderIndex = groupShaders.Create<knob::Combo>("ps-shader-index", 0, kAvailablePsShaders);
+    
+    alphaBlend->SetDisplayName("Alpha Blend");
+    mBenchmarkSettings.vsShaderIndex->SetDisplayName("Vertex Shader");
+    mBenchmarkSettings.psShaderIndex->SetDisplayName("Pixel Shader");
 }
 
 void ProjApp::LoadTexture(

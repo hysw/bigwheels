@@ -20,31 +20,87 @@
 namespace ppx {
 
 // -------------------------------------------------------------------------------------------------
+// KnobManager::GroupNode
+// -------------------------------------------------------------------------------------------------
+
+class KnobManager::GroupNode : public KnobManager::Node
+{
+protected:
+    virtual void Draw() override;
+
+private:
+    std::string mTitle;
+
+    friend class KnobManager;
+    GroupNode(const std::string&);
+};
+
+KnobManager::GroupNode::GroupNode(const std::string& title)
+    : mTitle(title)
+{
+}
+
+void KnobManager::GroupNode::Draw()
+{
+    ImGui::Text(mTitle.c_str());
+}
+
+// -------------------------------------------------------------------------------------------------
 // KnobManager
 // -------------------------------------------------------------------------------------------------
 
 KnobManager::~KnobManager()
 {
-    for (auto knob : mKnobs) {
-        delete knob;
+    for (auto node : mNodes) {
+        delete node;
     }
+    mNodes.clear();
+    mKnobs.clear();
 }
 
-void KnobManager::OnCreate(KnobBase* pKnob)
+void KnobManager::AddChild(Node* pParent, Node* pChild)
+{
+    if (pChild == nullptr) {
+        return;
+    }
+    Node::List* pChildrenList = &mRoots;
+    if (pParent) {
+        pChildrenList = &pParent->mChildren;
+    }
+    pChild->mParent = pParent;
+    pChildrenList->Append(pChild);
+}
+
+KnobManager::GroupRef KnobManager::CreateGroupInternal(Node* pParent, const std::string& title)
+{
+    GroupNode* pNode = new GroupNode(title);
+    OnCreateNode(pParent, pNode);
+    return GroupRef(this, pNode);
+}
+
+void KnobManager::OnCreateNode(Node* pParent, Node* pNode)
+{
+    if (!pNode) {
+        return;
+    }
+    mNodes.push_back(pNode);
+    AddChild(pParent, pNode);
+}
+
+void KnobManager::OnCreateKnob(Node* pParent, KnobManager::Knob* pKnob)
 {
     if (!pKnob) {
         return;
     }
-    InvalidateDrawOrder();
-    size_t knobIndex                      = mKnobs.size();
-    static_cast<KnobBase*>(pKnob)->mIndex = knobIndex;
+    OnCreateNode(pParent, pKnob);
+
     mKnobs.push_back(pKnob);
     if (!pKnob->GetFlagName().empty()) {
-        mNameMap[pKnob->GetFlagName()] = knobIndex;
+        mNameMap[pKnob->GetFlagName()] = pKnob;
     }
 }
 
-KnobBase* KnobManager::GetKnobInternal(const std::string& name)
+KnobManager::Knob* KnobManager::GetKnobInternal(const std::string& name)
 {
     if (name.empty()) {
         return nullptr;
@@ -66,49 +122,24 @@ void KnobManager::DrawAllKnobs(bool inExistingWindow)
         ImGui::End();
 }
 
-void KnobManager::CalculateDrawOrder()
-{
-    if (firstKnobToDraw < mKnobs.size()) {
-        return;
-    }
-
-    for (size_t i = 0; i < mKnobs.size(); i++) {
-        mKnobs[i]->mFirstChild = KnobBase::kInvalidIndex;
-        mKnobs[i]->mSibling    = KnobBase::kInvalidIndex;
-    }
-
-    for (size_t i = 0; i < mKnobs.size(); i++) {
-        size_t  index             = mKnobs.size() - i - 1;
-        size_t* pParentFirstChild = &firstKnobToDraw;
-        if (mKnobs[index]->mParentIndex < mKnobs.size()) {
-            pParentFirstChild = &mKnobs[mKnobs[index]->mParentIndex]->mFirstChild;
-        }
-        mKnobs[index]->mSibling = *pParentFirstChild;
-        *pParentFirstChild      = index;
-    }
-}
-
 void KnobManager::DrawKnobs()
 {
-    CalculateDrawOrder();
-
-    size_t at = firstKnobToDraw;
-    while (at < mKnobs.size()) {
-        mKnobs[at]->Draw();
-
-        if (mKnobs[at]->mFirstChild < mKnobs.size()) {
+    Node* at = mRoots.pBegin;
+    while (at) {
+        at->Draw();
+        if (at->mChildren.pBegin) {
             ImGui::Indent();
-            at = mKnobs[at]->mFirstChild;
+            at = at->mChildren.pBegin;
             continue;
         }
 
-        while (at < mKnobs.size() && !(mKnobs[at]->mSibling < mKnobs.size())) {
+        while(at && !at->mSibling) {
             ImGui::Unindent();
-            at = mKnobs[at]->mParentIndex;
+            at = at->mParent;
         }
 
-        if (at < mKnobs.size()) {
-            at = mKnobs[at]->mSibling;
+        if(at) {
+            at = at->mSibling;
         }
     }
 }
@@ -117,9 +148,6 @@ std::string KnobManager::GetUsageMsg()
 {
     std::string usageMsg = "\nApplication-specific flags\n";
     for (auto pKnob : mKnobs) {
-        if (pKnob->GetFlagName().empty()) {
-            continue;
-        }
         usageMsg += "--" + pKnob->GetFlagName() + ": " + pKnob->GetFlagDesc() + "\n";
     }
     return usageMsg;
@@ -129,9 +157,9 @@ bool KnobManager::ParseOptions(std::unordered_map<std::string, CliOptions::Optio
 {
     bool allSucceed = true;
     for (auto pair : optionsMap) {
-        auto      name    = pair.first;
-        auto      opt     = pair.second;
-        KnobBase* knobPtr = GetKnobInternal(name);
+        auto  name    = pair.first;
+        auto  opt     = pair.second;
+        Knob* knobPtr = GetKnobInternal(name);
         if (!knobPtr) {
             continue;
         }
@@ -150,10 +178,10 @@ class KnobValueImpl : public Knob<ValueT>
 public:
     typedef ValueT ValueType;
 
-    KnobValueImpl(const KnobConfig& base)
+    KnobValueImpl(const std::string& base)
         : Knob<ValueType>(base) {}
 
-    KnobValueImpl(const KnobConfig& base, const ValueType& defaultValue)
+    KnobValueImpl(const std::string& base, const ValueType& defaultValue)
         : Knob<ValueType>(base), mValue(defaultValue) {}
 
     const ValueType& GetValue() const override { return mValue; }
@@ -187,7 +215,7 @@ public:
     }
 };
 
-Checkbox::PtrType Checkbox::Create(const KnobConfig& base, ValueType defaultValue)
+Checkbox::PtrType Checkbox::Create(const std::string& base, ValueType defaultValue)
 {
     return new KnobImpl<Checkbox>(base, defaultValue);
 }
@@ -200,7 +228,7 @@ template <>
 class KnobImpl<Combo> : public KnobValueImpl<Combo::ValueType>
 {
 public:
-    KnobImpl(const KnobConfig& base, ValueType defaultValue, const std::vector<std::string>& values)
+    KnobImpl(const std::string& base, ValueType defaultValue, const std::vector<std::string>& values)
         : KnobValueImpl(base, defaultValue)
     {
         std::vector<size_t> offsets;
@@ -246,28 +274,9 @@ public:
     std::string              mStorage;
 };
 
-Combo::PtrType Combo::CreateInternal(const KnobConfig& base, ValueType defaultValue, const std::vector<std::string>& values)
+Combo::PtrType Combo::CreateInternal(const std::string& base, ValueType defaultValue, const std::vector<std::string>& values)
 {
     return new KnobImpl<Combo>(base, defaultValue, values);
-}
-
-// -------------------------------------------------------------------------------------------------
-// A group header
-// -------------------------------------------------------------------------------------------------
-template <>
-class KnobImpl<Group> : public KnobValueImpl<Group::ValueType>
-{
-public:
-    using KnobValueImpl<Group::ValueType>::KnobValueImpl;
-    void Draw() override
-    {
-        ImGui::Text(GetValue().c_str());
-    }
-};
-
-Group::PtrType Group::Create(const KnobConfig& base, const std::string& title)
-{
-    return new KnobImpl<Group>(base, title);
 }
 
 } // namespace ppx::knob
