@@ -643,6 +643,7 @@ void ProjApp::LoadNodes(
 
 void ProjApp::Setup()
 {
+    PPX_LOG_INFO("KNOBS<json>:" << knobManager.SerializeJsonOptions());
     // Cameras
     {
         mCamera = PerspCamera(60.0f, GetWindowAspect());

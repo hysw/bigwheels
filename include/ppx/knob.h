@@ -17,6 +17,7 @@
 
 #include "ppx/command_line_parser.h"
 #include "ppx/log.h"
+#include "ppx/json_fwd.h"
 
 #include <functional>
 #include <iostream>
@@ -61,7 +62,7 @@ public:
             }
         } mChildren;
     };
-
+    
     class Knob : public Node
     {
     public:
@@ -71,6 +72,8 @@ public:
     protected:
         friend class KnobManager;
         virtual bool ParseOption(const CliOptions::Option&) = 0;
+        virtual void Serialize(json*) = 0;
+        virtual bool Deserialize(const json*) = 0;
     };
 
     class GroupRef
@@ -121,6 +124,9 @@ public:
     }
 
     void DrawAllKnobs(bool inExistingWindow);
+
+    std::string SerializeJsonOptions();
+    void ParseJsonOptions(const std::string&);
 
     bool        IsEmpty() { return mKnobs.empty(); }
     std::string GetUsageMsg();

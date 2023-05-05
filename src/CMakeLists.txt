@@ -160,6 +160,8 @@ list(
     ${INC_DIR}/ppx/geometry.h
     ${INC_DIR}/ppx/graphics_util.h
     ${INC_DIR}/ppx/imgui_impl.h
+    ${INC_DIR}/ppx/json.h
+    ${INC_DIR}/ppx/json_fwd.h
     ${INC_DIR}/ppx/knob.h
     ${INC_DIR}/ppx/log.h
     ${INC_DIR}/ppx/mipmap.h
@@ -435,6 +437,7 @@ target_include_directories(
             ${PPX_THIRD_PARTY_DIR}/cgltf
             ${PPX_THIRD_PARTY_DIR}/xxHash
             ${PPX_THIRD_PARTY_DIR}/utfcpp/source
+            ${PPX_THIRD_PARTY_DIR}/json/include
 )
 
 # Include D3D12 directories if D3D12 is enabled

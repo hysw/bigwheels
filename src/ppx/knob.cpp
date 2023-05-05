@@ -14,6 +14,7 @@
 
 #include "backends/imgui_impl_glfw.h"
 #include "ppx/knob.h"
+#include "ppx/json.h"
 
 #include <cstring>
 
@@ -133,12 +134,12 @@ void KnobManager::DrawKnobs()
             continue;
         }
 
-        while(at && !at->mSibling) {
+        while (at && !at->mSibling) {
             ImGui::Unindent();
             at = at->mParent;
         }
 
-        if(at) {
+        if (at) {
             at = at->mSibling;
         }
     }
@@ -166,6 +167,26 @@ bool KnobManager::ParseOptions(std::unordered_map<std::string, CliOptions::Optio
         allSucceed = allSucceed && knobPtr->ParseOption(opt);
     }
     return allSucceed;
+}
+
+std::string KnobManager::SerializeJsonOptions()
+{
+    json j;
+    for (auto pKnob : mKnobs) {
+        pKnob->Serialize(&j[pKnob->GetFlagName()]);
+    }
+    return j.dump();
+}
+
+void KnobManager::ParseJsonOptions(const std::string& str)
+{
+    const json j = json::parse(str);
+    for (auto pKnob : mKnobs) {
+        if (!j.contains(pKnob->GetFlagName())) {
+            continue;
+        }
+        pKnob->Deserialize(&j[pKnob->GetFlagName()]);
+    }
 }
 
 } // namespace ppx
@@ -213,6 +234,18 @@ public:
         mValue = opt.GetValueOrDefault<bool>(mValue);
         return true;
     }
+    void Serialize(json* pData) override
+    {
+        *pData = mValue;
+    }
+    bool Deserialize(const json* pData) override
+    {
+        if (!pData->is_boolean()) {
+            return false;
+        }
+        mValue = pData->get<bool>();
+        return true;
+    }
 };
 
 Checkbox::PtrType Checkbox::Create(const std::string& base, ValueType defaultValue)
@@ -249,13 +282,21 @@ public:
         ImGui::Combo(GetDisplayName().c_str(), &mValue, mValues.data(), static_cast<int>(mValues.size()));
     }
 
+    bool FromString(const std::string& newValue)
+    {
+        auto iter = std::find(mValues.begin(), mValues.end(), newValue);
+        if (iter == mValues.end()) {
+            return false;
+        }
+        mValue = static_cast<int32_t>(iter - mValues.begin());
+        return true;
+    }
+
     bool ParseOption(const CliOptions::Option& opt) override
     {
         {
             std::string newValue = opt.GetValueOrDefault<std::string>("");
-            auto        iter     = std::find(mValues.begin(), mValues.end(), newValue);
-            if (iter != mValues.end()) {
-                mValue = static_cast<int32_t>(iter - mValues.begin());
+            if (FromString(newValue)) {
                 return true;
             }
         }
@@ -269,6 +310,18 @@ public:
         return false;
     }
 
+    void Serialize(json* pData) override
+    {
+        *pData = mValue;
+    }
+
+    bool Deserialize(const json* pData) override
+    {
+        if (!pData->is_string()) {
+            return false;
+        }
+        return FromString(pData->get<std::string>());
+    }
     // not private: this is implementation
     std::vector<const char*> mValues;
     std::string              mStorage;
