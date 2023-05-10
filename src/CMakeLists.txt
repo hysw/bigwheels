@@ -163,6 +163,7 @@ list(
     ${INC_DIR}/ppx/json.h
     ${INC_DIR}/ppx/json_fwd.h
     ${INC_DIR}/ppx/knob.h
+    ${INC_DIR}/ppx/knob_fwd.h
     ${INC_DIR}/ppx/log.h
     ${INC_DIR}/ppx/mipmap.h
     ${INC_DIR}/ppx/obj_ptr.h

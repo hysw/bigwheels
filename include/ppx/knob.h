@@ -18,6 +18,7 @@
 #include "ppx/command_line_parser.h"
 #include "ppx/log.h"
 #include "ppx/json_fwd.h"
+#include "ppx/knob_fwd.h"
 
 #include <functional>
 #include <iostream>
@@ -32,7 +33,7 @@ class KnobManager
 {
 private:
     template <typename KnobT>
-    using PtrOf = KnobT::PtrType;
+    using PtrOf = typename KnobT::PtrType;
 
 public:
     class Node
@@ -62,7 +63,7 @@ public:
             }
         } mChildren;
     };
-    
+
     class Knob : public Node
     {
     public:
@@ -72,8 +73,8 @@ public:
     protected:
         friend class KnobManager;
         virtual bool ParseOption(const CliOptions::Option&) = 0;
-        virtual void Serialize(json*) = 0;
-        virtual bool Deserialize(const json*) = 0;
+        virtual void Serialize(json*)                       = 0;
+        virtual bool Deserialize(const json*)               = 0;
     };
 
     class GroupRef
@@ -126,7 +127,7 @@ public:
     void DrawAllKnobs(bool inExistingWindow);
 
     std::string SerializeJsonOptions();
-    void ParseJsonOptions(const std::string&);
+    void        ParseJsonOptions(const std::string&);
 
     bool        IsEmpty() { return mKnobs.empty(); }
     std::string GetUsageMsg();
@@ -160,21 +161,11 @@ private:
     GroupRef CreateGroupInternal(Node* pParent, const std::string& title);
 };
 
-template <typename ValueT>
-class Knob : public KnobManager::Knob
+class KnobInfo : public KnobManager::Knob
 {
 public:
-    typedef ValueT ValueType;
-    typedef Knob*  PtrType;
-
-    Knob(const std::string& name)
+    KnobInfo(const std::string& name)
         : mFlagName(name), mDisplayName(name) {}
-
-    const ValueType& Get() const { return GetValue(); }
-    void             Set(const ValueType& v) { return SetValue(v); }
-
-    virtual const ValueType& GetValue() const           = 0;
-    virtual void             SetValue(const ValueType&) = 0;
 
     std::string GetFlagName() const override { return mFlagName; }
     std::string GetFlagDesc() const override { return mFlagDesc; }
@@ -192,24 +183,48 @@ private:
     std::string mDisplayName;
 };
 
-namespace knob {
 template <typename ValueT>
+class KnobValue : public KnobInfo
+{
+public:
+    using KnobInfo::KnobInfo;
+
+    typedef ValueT ValueType;
+
+    const ValueType& Get() const { return GetValue(); }
+    void             Set(const ValueType& v) { return SetValue(v); }
+
+    virtual const ValueType& GetValue() const           = 0;
+    virtual void             SetValue(const ValueType&) = 0;
+};
+
+template <typename KnobSpecT>
+class Knob : public KnobValue<typename KnobSpecT::ValueType>
+{
+public:
+    using KnobValue<typename KnobSpecT::ValueType>::KnobValue;
+
+    typedef Knob* PtrType;
+};
+
+namespace knob {
+template <typename KnobSpecT, typename ValueT>
 struct KnobSpecOf
 {
     typedef ValueT          ValueType;
-    typedef Knob<ValueType> KnobType;
+    typedef Knob<KnobSpecT> KnobType;
     typedef KnobType*       PtrType;
 };
 
-class Checkbox : public KnobSpecOf<bool>
+class Checkbox : public KnobSpecOf<Checkbox, bool>
 {
-    friend class KnobManager;
+    friend class ppx::KnobManager;
     static PtrType Create(const std::string&, ValueType);
 };
 
-class Combo : public KnobSpecOf<int32_t>
+class Combo : public KnobSpecOf<Combo, int32_t>
 {
-    friend class KnobManager;
+    friend class ppx::KnobManager;
 
     static PtrType CreateInternal(const std::string&, ValueType, const std::vector<std::string>&);
 
@@ -219,9 +234,6 @@ class Combo : public KnobSpecOf<int32_t>
         return CreateInternal(name, defaultValue, std::vector<std::string>(std::begin(values), std::end(values)));
     }
 };
-
-typedef Checkbox::PtrType CheckboxPtr;
-typedef Combo::PtrType    ComboPtr;
 
 } // namespace knob
 

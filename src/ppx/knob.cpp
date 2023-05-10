@@ -43,7 +43,7 @@ KnobManager::GroupNode::GroupNode(const std::string& title)
 
 void KnobManager::GroupNode::Draw()
 {
-    ImGui::Text(mTitle.c_str());
+    ImGui::Text("%s", mTitle.c_str());
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -193,17 +193,17 @@ void KnobManager::ParseJsonOptions(const std::string& str)
 
 namespace ppx::knob {
 
-template <typename ValueT>
-class KnobValueImpl : public Knob<ValueT>
+template <typename KnobSpecT>
+class KnobValueImpl : public Knob<KnobSpecT>
 {
 public:
-    typedef ValueT ValueType;
+    typedef typename KnobSpecT::ValueType ValueType;
 
     KnobValueImpl(const std::string& base)
-        : Knob<ValueType>(base) {}
+        : Knob<KnobSpecT>(base) {}
 
     KnobValueImpl(const std::string& base, const ValueType& defaultValue)
-        : Knob<ValueType>(base), mValue(defaultValue) {}
+        : Knob<KnobSpecT>(base), mValue(defaultValue) {}
 
     const ValueType& GetValue() const override { return mValue; }
 
@@ -221,10 +221,11 @@ class KnobImpl;
 // -------------------------------------------------------------------------------------------------
 
 template <>
-class KnobImpl<Checkbox> : public KnobValueImpl<Checkbox::ValueType>
+class KnobImpl<Checkbox> : public KnobValueImpl<Checkbox>
 {
 public:
-    using KnobValueImpl<Checkbox::ValueType>::KnobValueImpl;
+    using KnobValueImpl<Checkbox>::KnobValueImpl;
+
     void Draw() override
     {
         ImGui::Checkbox(GetDisplayName().c_str(), &mValue);
@@ -258,7 +259,7 @@ Checkbox::PtrType Checkbox::Create(const std::string& base, ValueType defaultVal
 // -------------------------------------------------------------------------------------------------
 
 template <>
-class KnobImpl<Combo> : public KnobValueImpl<Combo::ValueType>
+class KnobImpl<Combo> : public KnobValueImpl<Combo>
 {
 public:
     KnobImpl(const std::string& base, ValueType defaultValue, const std::vector<std::string>& values)
