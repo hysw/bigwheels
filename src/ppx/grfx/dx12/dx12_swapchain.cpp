@@ -53,10 +53,9 @@ Result Swapchain::CreateApiObjects(const grfx::SwapchainCreateInfo* pCreateInfo)
     }
 
     std::vector<ID3D12Resource*> colorImages;
-
-#if defined(PPX_BUILD_XR)
     std::vector<ID3D12Resource*> depthImages;
 
+#if defined(PPX_BUILD_XR)
     const bool isXREnabled = (mCreateInfo.pXrComponent != nullptr);
     if (isXREnabled) {
         const XrComponent& xrComponent = *mCreateInfo.pXrComponent;
@@ -244,31 +243,14 @@ Result Swapchain::CreateApiObjects(const grfx::SwapchainCreateInfo* pCreateInfo)
         }
     }
 
-    // Create color images
     {
-        auto ppxres = CreateColorImages(pCreateInfo->width, pCreateInfo->height, pCreateInfo->colorFormat, colorImages);
+        std::vector<void*> colorImageHandles(colorImages.begin(), colorImages.end());
+        std::vector<void*> depthImageHandles(depthImages.begin(), depthImages.end());
+        ppx::Result        ppxres = mActual.WrapAll(*this, colorImageHandles, depthImageHandles);
         if (Failed(ppxres)) {
             return ppxres;
         }
     }
-
-#if defined(PPX_BUILD_XR)
-    {
-        for (size_t i = 0; i < depthImages.size(); ++i) {
-            grfx::ImageCreateInfo imageCreateInfo = grfx::ImageCreateInfo::DepthStencilTarget(pCreateInfo->width, pCreateInfo->height, pCreateInfo->depthFormat, grfx::SAMPLE_COUNT_1);
-            imageCreateInfo.pApiObject            = depthImages[i];
-
-            grfx::ImagePtr image;
-            Result         ppxres = GetDevice()->CreateImage(&imageCreateInfo, &image);
-            if (Failed(ppxres)) {
-                PPX_ASSERT_MSG(false, "image create failed");
-                return ppxres;
-            }
-
-            mDepthImages.push_back(image);
-        }
-    }
-#endif
 
     // Save queue for later use
     mQueue = ToApi(pCreateInfo->pQueue)->GetDxQueue();
@@ -287,38 +269,6 @@ void Swapchain::DestroyApiObjects()
     if (mQueue) {
         mQueue.Reset();
     }
-}
-
-Result Swapchain::CreateColorImages(uint32_t width, uint32_t height, grfx::Format format, const std::vector<ID3D12Resource*>& colorImages)
-{
-    for (size_t i = 0; i < colorImages.size(); ++i) {
-        grfx::ImageCreateInfo imageCreateInfo           = {};
-        imageCreateInfo.type                            = grfx::IMAGE_TYPE_2D;
-        imageCreateInfo.width                           = width;
-        imageCreateInfo.height                          = height;
-        imageCreateInfo.depth                           = 1;
-        imageCreateInfo.format                          = format;
-        imageCreateInfo.sampleCount                     = grfx::SAMPLE_COUNT_1;
-        imageCreateInfo.mipLevelCount                   = 1;
-        imageCreateInfo.arrayLayerCount                 = 1;
-        imageCreateInfo.usageFlags.bits.transferSrc     = true;
-        imageCreateInfo.usageFlags.bits.transferDst     = true;
-        imageCreateInfo.usageFlags.bits.sampled         = true;
-        imageCreateInfo.usageFlags.bits.storage         = true;
-        imageCreateInfo.usageFlags.bits.colorAttachment = true;
-        imageCreateInfo.pApiObject                      = colorImages[i];
-
-        grfx::ImagePtr image;
-        Result         ppxres = GetDevice()->CreateImage(&imageCreateInfo, &image);
-        if (Failed(ppxres)) {
-            PPX_ASSERT_MSG(false, "image create failed");
-            return ppxres;
-        }
-
-        mColorImages.push_back(image);
-    }
-
-    return ppx::SUCCESS;
 }
 
 Result Swapchain::AcquireNextImageInternal(
@@ -399,19 +349,19 @@ Result Swapchain::PresentInternal(
 
 Result Swapchain::Resize(uint32_t width, uint32_t height)
 {
+#if defined(PPX_BUILD_XR)
+    // Note: resize is not implemented for XR.
+    const bool isXREnabled = (mCreateInfo.pXrComponent != nullptr);
+    if (isXREnabled) {
+        return ppx::ERROR_FAILED;
+    }
+#endif
+
     mCreateInfo.width  = width;
     mCreateInfo.height = height;
 
-    std::vector<ID3D12Resource*> colorImages;
-    for (auto& im : mColorImages) {
-        auto pRes = static_cast<dx12::Image*>(im.Get())->GetDxResource();
-        colorImages.push_back(pRes);
-    }
-
     // Destroy these to make sure there's no reference before resizing
-    DestroyRenderPasses();
-    DestroyDepthImages();
-    DestroyColorImages();
+    mActual.DestroyAll(*this);
 
     // Resize buffers
     HRESULT hr = mSwapchain->ResizeBuffers(
@@ -445,17 +395,12 @@ Result Swapchain::Resize(uint32_t width, uint32_t height)
             colorImages.push_back(resource);
         }
 
-        auto ppxres = CreateColorImages(width, height, mColorFormat, colorImages);
+        std::vector<void*> imageHandles(colorImages.begin(), colorImages.end());
+        auto               ppxres = mActual.WrapAll(*this, imageHandles, {});
         if (Failed(ppxres)) {
             return ppxres;
         }
     }
-
-    // Create depth images
-    CreateDepthImages();
-
-    // Create render passes
-    CreateRenderPasses();
 
     return ppx::SUCCESS;
 }

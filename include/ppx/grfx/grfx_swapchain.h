@@ -15,6 +15,7 @@
 #ifndef ppx_grfx_swapchain_h
 #define ppx_grfx_swapchain_h
 
+#include <functional>
 #include <limits>
 
 #include "ppx/grfx/grfx_config.h"
@@ -120,9 +121,10 @@ public:
     Swapchain() {}
     virtual ~Swapchain() {}
 
+    bool         IsIndirect() const { return mIsIndirect; }
     bool         IsHeadless() const;
-    uint32_t     GetWidth() const { return mCreateInfo.width; }
-    uint32_t     GetHeight() const { return mCreateInfo.height; }
+    uint32_t     GetWidth() const { return GetTarget().width; }
+    uint32_t     GetHeight() const { return GetTarget().height; }
     uint32_t     GetImageCount() const { return mCreateInfo.imageCount; }
     grfx::Format GetColorFormat() const { return mCreateInfo.colorFormat; }
     grfx::Format GetDepthFormat() const { return mCreateInfo.depthFormat; }
@@ -130,11 +132,15 @@ public:
     Result GetColorImage(uint32_t imageIndex, grfx::Image** ppImage) const;
     Result GetDepthImage(uint32_t imageIndex, grfx::Image** ppImage) const;
     Result GetRenderPass(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, grfx::RenderPass** ppRenderPass) const;
+    Result GetUIRenderPass(uint32_t imageIndex, grfx::RenderPass** ppRenderPass) const;
 
     // Convenience functions - returns empty object if index is invalid
     grfx::ImagePtr      GetColorImage(uint32_t imageIndex) const;
     grfx::ImagePtr      GetDepthImage(uint32_t imageIndex) const;
     grfx::RenderPassPtr GetRenderPass(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp = grfx::ATTACHMENT_LOAD_OP_CLEAR) const;
+    grfx::RenderPassPtr GetUIRenderPass(uint32_t imageIndex) const;
+
+    void RecordUI(uint32_t imageIndex, std::function<void(grfx::CommandBufferPtr)>);
 
     Result AcquireNextImage(
         uint64_t         timeout,    // Nanoseconds
@@ -151,6 +157,7 @@ public:
 
     // D3D12 only, will return ERROR_FAILED on Vulkan
     virtual Result Resize(uint32_t width, uint32_t height) = 0;
+    Result         SetRenderSize(uint32_t width, uint32_t height);
 
 #if defined(PPX_BUILD_XR)
     bool ShouldSkipExternalSynchronization() const
@@ -172,14 +179,47 @@ protected:
     virtual void   Destroy() override;
     friend class grfx::Device;
 
-    // Make these protected since D3D12's swapchain resize will need to call them
-    void   DestroyColorImages();
-    Result CreateDepthImages();
-    void   DestroyDepthImages();
-    Result CreateRenderPasses();
-    void   DestroyRenderPasses();
+    struct Target
+    {
+        uint32_t width  = 0;
+        uint32_t height = 0;
+
+        Result WrapColorImages(Swapchain&, const std::vector<void*>& handles);
+        Result CreateColorImages(Swapchain&);
+        void   DestroyColorImages(Swapchain&);
+
+        Result WrapDepthImages(Swapchain&, const std::vector<void*>& handles);
+        Result CreateDepthImages(Swapchain&);
+        void   DestroyDepthImages(Swapchain&);
+
+        Result CreateRenderPasses(Swapchain&);
+        void   DestroyRenderPasses(Swapchain&);
+
+        Result CreateOrWrapAll(
+            Swapchain&,
+            uint32_t                  width,
+            uint32_t                  height,
+            const std::vector<void*>* colorHandles = nullptr,
+            const std::vector<void*>* depthHandles = nullptr);
+        Result WrapAll(Swapchain& self, const std::vector<void*>& colorHandles, const std::vector<void*>& depthHandles)
+        {
+            return CreateOrWrapAll(self, self.mCreateInfo.width, self.mCreateInfo.height, &colorHandles, &depthHandles);
+        }
+        Result CreateAll(Swapchain& self, uint32_t width, uint32_t height)
+        {
+            return CreateOrWrapAll(self, width, height);
+        }
+        void DestroyAll(Swapchain&);
+
+        std::vector<grfx::ImagePtr>      depthImages;
+        std::vector<grfx::ImagePtr>      colorImages;
+        std::vector<grfx::RenderPassPtr> clearRenderPasses;
+        std::vector<grfx::RenderPassPtr> loadRenderPasses;
+    };
 
 private:
+    bool mEnablePostProcess = false;
+
     virtual Result AcquireNextImageInternal(
         uint64_t         timeout,    // Nanoseconds
         grfx::Semaphore* pSemaphore, // Wait sempahore
@@ -202,14 +242,19 @@ private:
         uint32_t                      waitSemaphoreCount,
         const grfx::Semaphore* const* ppWaitSemaphores);
 
-    std::vector<grfx::CommandBufferPtr> mHeadlessCommandBuffers;
+    void RecordPreamble(uint32_t imageIndex);
+
+    std::vector<grfx::SemaphorePtr>     mPostProcessSemaphores;
+    std::vector<grfx::CommandBufferPtr> mCommandBuffers;
+    std::vector<bool>                   mIsRecording;
 
 protected:
-    grfx::QueuePtr                   mQueue;
-    std::vector<grfx::ImagePtr>      mDepthImages;
-    std::vector<grfx::ImagePtr>      mColorImages;
-    std::vector<grfx::RenderPassPtr> mClearRenderPasses;
-    std::vector<grfx::RenderPassPtr> mLoadRenderPasses;
+    grfx::QueuePtr mQueue;
+    Target         mIndirect;
+    Target         mActual;
+    bool           mIsIndirect = false;
+    const Target&  GetTarget() const { return mIsIndirect ? mIndirect : mActual; }
+    Target&        GetTarget() { return mIsIndirect ? mIndirect : mActual; }
 
 #if defined(PPX_BUILD_XR)
     XrSwapchain mXrColorSwapchain = XR_NULL_HANDLE;

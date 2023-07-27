@@ -487,47 +487,19 @@ Result Swapchain::CreateApiObjects(const grfx::SwapchainCreateInfo* pCreateInfo)
         }
     }
 
-    // Create images.
+    // Create images and renderpasses.
     {
-        for (uint32_t i = 0; i < colorImages.size(); ++i) {
-            grfx::ImageCreateInfo imageCreateInfo           = {};
-            imageCreateInfo.type                            = grfx::IMAGE_TYPE_2D;
-            imageCreateInfo.width                           = pCreateInfo->width;
-            imageCreateInfo.height                          = pCreateInfo->height;
-            imageCreateInfo.depth                           = 1;
-            imageCreateInfo.format                          = pCreateInfo->colorFormat;
-            imageCreateInfo.sampleCount                     = grfx::SAMPLE_COUNT_1;
-            imageCreateInfo.mipLevelCount                   = 1;
-            imageCreateInfo.arrayLayerCount                 = 1;
-            imageCreateInfo.usageFlags.bits.transferSrc     = true;
-            imageCreateInfo.usageFlags.bits.transferDst     = true;
-            imageCreateInfo.usageFlags.bits.sampled         = true;
-            imageCreateInfo.usageFlags.bits.storage         = true;
-            imageCreateInfo.usageFlags.bits.colorAttachment = true;
-            imageCreateInfo.pApiObject                      = (void*)(colorImages[i]);
-
-            grfx::ImagePtr image;
-            Result         ppxres = GetDevice()->CreateImage(&imageCreateInfo, &image);
-            if (Failed(ppxres)) {
-                PPX_ASSERT_MSG(false, "image create failed");
-                return ppxres;
-            }
-
-            mColorImages.push_back(image);
+        std::vector<void*> colorImageHandles;
+        for (auto& colorImage : colorImages) {
+            colorImageHandles.push_back(reinterpret_cast<void*>(colorImage));
         }
-
-        for (size_t i = 0; i < depthImages.size(); ++i) {
-            grfx::ImageCreateInfo imageCreateInfo = grfx::ImageCreateInfo::DepthStencilTarget(pCreateInfo->width, pCreateInfo->height, pCreateInfo->depthFormat, grfx::SAMPLE_COUNT_1);
-            imageCreateInfo.pApiObject            = (void*)(depthImages[i]);
-
-            grfx::ImagePtr image;
-            Result         ppxres = GetDevice()->CreateImage(&imageCreateInfo, &image);
-            if (Failed(ppxres)) {
-                PPX_ASSERT_MSG(false, "image create failed");
-                return ppxres;
-            }
-
-            mDepthImages.push_back(image);
+        std::vector<void*> depthImageHandles;
+        for (auto& depthImage : depthImages) {
+            depthImageHandles.push_back(reinterpret_cast<void*>(depthImage));
+        }
+        ppx::Result ppxres = mActual.WrapAll(*this, colorImageHandles, depthImageHandles);
+        if (ppxres != ppx::SUCCESS) {
+            return ppxres;
         }
     }
 
@@ -616,6 +588,12 @@ Result Swapchain::PresentInternal(
         &vkpi);
     // Handle failure cases
     if (vkres < VK_SUCCESS) {
+        // Some Linux driver like to give OUT_OF_DATE error before resize callback.
+        // It succeed in respect to queue operation, so we log the error and continue.
+        if (vkres == VK_ERROR_OUT_OF_DATE_KHR) {
+            PPX_LOG_ERROR("vkQueuePresentKHR failed: " << ToString(vkres));
+            return ppx::SUCCESS;
+        }
         PPX_ASSERT_MSG(false, "vkQueuePresentKHR failed: " << ToString(vkres));
         return ppx::ERROR_API_FAILURE;
     }
