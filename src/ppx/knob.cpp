@@ -70,6 +70,16 @@ void KnobCheckbox::SetDefaultAndValue(bool newValue)
     ResetToDefault();
 }
 
+KnobTrigger::KnobTrigger(const std::string& flagName)
+    : Knob(flagName, true)
+{
+}
+
+void KnobTrigger::Draw()
+{
+    SetValue(ImGui::Button(mDisplayName.c_str()));
+}
+
 // -------------------------------------------------------------------------------------------------
 // KnobManager
 // -------------------------------------------------------------------------------------------------

@@ -189,14 +189,47 @@ private:
     T mMaxValue;
 };
 
+// KnobCheckbox will be displayed as a checkbox in the UI
+class KnobTrigger final
+    : public Knob
+{
+public:
+    KnobTrigger(const std::string& flagName);
+
+    bool GetValue() const { return false; }
+
+    // Used for when mValue needs to be updated outside of UI
+    void ResetToDefault() override {}
+    void SetValue(bool triggered) {
+        if (triggered) {
+            RaiseUpdatedFlag();
+        }
+    }
+
+private:
+    void Draw() override;
+
+    // Expected commandline flag format:
+    // --flag_name <true|false>
+    void UpdateFromFlags(const CliOptions& opts) override {}
+};
+
+template <typename T>
+struct ToStringImplicit
+{
+    static_assert(std::is_convertible_v<const T&, std::string>, "Type T can't be converted to string.");
+    using ResultType = std::conditional_t<std::is_same_v<const T, const std::string>, const std::string&, std::string>;
+    static ResultType ToString(const T& v) { return v; }
+};
+
 // KnobDropdown will be displayed as a dropdown in the UI
 // The knob stores the index of a selected choice from a list of allowed options
-template <typename T>
+template <typename T, class ToStringPolicy = ToStringImplicit<T>>
 class KnobDropdown final
     : public Knob
 {
 public:
-    static_assert(std::is_same_v<T, std::string>, "KnobDropdown must be created with type: std::string");
+    // static_assert(std::is_same_v<T, std::string>, "KnobDropdown must be created with type: std::string");
 
     template <typename Iter>
     KnobDropdown(
@@ -208,7 +241,8 @@ public:
     {
         PPX_ASSERT_MSG(defaultIndex < mChoices.size(), "defaultIndex is out of range");
         std::string choiceStr = "";
-        for (const auto& choice : mChoices) {
+        for (const auto& item : mChoices) {
+            auto choice   = ToStringPolicy::ToString(item);
             bool hasSpace = choice.find_first_of("\t ") != std::string::npos;
             if (hasSpace) {
                 choiceStr += "\"" + choice + "\"|";
@@ -262,14 +296,18 @@ public:
     }
 
 private:
+    auto StringAt(size_t index) -> decltype(ToStringPolicy::ToString(GetValue()))
+    {
+        return ToStringPolicy::ToString(mChoices.at(index));
+    }
     void Draw() override
     {
-        if (!ImGui::BeginCombo(mDisplayName.c_str(), mChoices.at(mIndex).c_str())) {
+        if (!ImGui::BeginCombo(mDisplayName.c_str(), StringAt(mIndex).c_str())) {
             return;
         }
         for (size_t i = 0; i < mChoices.size(); ++i) {
             bool isSelected = (i == mIndex);
-            if (ImGui::Selectable(mChoices.at(i).c_str(), isSelected)) {
+            if (ImGui::Selectable(StringAt(i).c_str(), isSelected)) {
                 if (i != mIndex) { // A new choice is selected
                     mIndex = i;
                     RaiseUpdatedFlag();
@@ -286,7 +324,7 @@ private:
     // --flag_name <str>
     void UpdateFromFlags(const CliOptions& opts) override
     {
-        SetDefaultAndIndex(opts.GetExtraOptionValueOrDefault(mFlagName, GetValue()));
+        SetDefaultAndIndex(opts.GetExtraOptionValueOrDefault(mFlagName, ToStringPolicy::ToString(GetValue())));
     }
 
     bool IsValidIndex(size_t index)
@@ -303,7 +341,7 @@ private:
 
     void SetDefaultAndIndex(std::string newValue)
     {
-        auto temp = std::find(mChoices.cbegin(), mChoices.cend(), newValue);
+        auto temp = std::find_if(mChoices.cbegin(), mChoices.cend(), [&newValue](const T& v) -> bool { return ToStringPolicy::ToString(v) == newValue; });
         PPX_ASSERT_MSG(temp != mChoices.cend(), "invalid default value");
 
         mDefaultIndex = std::distance(mChoices.cbegin(), temp);
@@ -390,8 +428,8 @@ private:
 class KnobManager
 {
 public:
-    KnobManager()                   = default;
-    KnobManager(const KnobManager&) = delete;
+    KnobManager()                              = default;
+    KnobManager(const KnobManager&)            = delete;
     KnobManager& operator=(const KnobManager&) = delete;
 
 private:

@@ -285,8 +285,24 @@ struct ApplicationSettings
 #endif
             grfx::Format depthFormat = grfx::FORMAT_UNDEFINED;
             uint32_t     imageCount  = 2;
+            uint32_t     width       = 0;
+            uint32_t     height      = 0;
         } swapchain;
     } grfx;
+};
+
+struct RenderResolution
+{
+    operator std::string() const { return altName ? altName : std::to_string(width) + "x" + std::to_string(height); }
+    uint32_t    width;
+    uint32_t    height;
+    const char* altName = nullptr;
+};
+
+struct GlobalKnobs
+{
+    std::shared_ptr<KnobDropdown<RenderResolution>> renderResolution;
+    std::shared_ptr<KnobTrigger>                    screenshot;
 };
 
 //! @class Application
@@ -317,7 +333,7 @@ public:
     virtual void Scroll(float dx, float dy) {}                                                // Mouse wheel or touchpad scroll event
     virtual void Render() {}
     // Init knobs (adjustable parameters in the GUI that can be set at startup with commandline flags)
-    virtual void InitKnobs() {}
+    virtual void InitKnobs();
 
 protected:
     virtual void DispatchConfig();
@@ -348,11 +364,13 @@ protected:
 
     void TakeScreenshot();
 
+    bool ShouldDrawImGui() { return mImGui != nullptr; }
     void DrawImGui(grfx::CommandBuffer* pCommandBuffer);
     void DrawDebugInfo();
     void DrawProfilerGrfxApiFunctions();
 
-    KnobManager& GetKnobManager() { return mKnobManager; }
+    KnobManager&       GetKnobManager() { return mKnobManager; }
+    const GlobalKnobs& GetGlobalKnobs() const { return mGlobalKnobs; }
 
 public:
     int  Run(int argc, char** argv);
@@ -369,9 +387,19 @@ public:
     bool                       IsWindowMaximized() const;
     uint32_t                   GetUIWidth() const;
     uint32_t                   GetUIHeight() const;
+    float                      GetRenderAspect() const { return static_cast<float>(GetRenderWidth()) / static_cast<float>(GetRenderHeight()); }
     float                      GetWindowAspect() const { return static_cast<float>(mSettings.window.width) / static_cast<float>(mSettings.window.height); }
     grfx::Rect                 GetScissor() const;
     grfx::Viewport             GetViewport(float minDepth = 0.0f, float maxDepth = 1.0f) const;
+
+    uint32_t GetRenderWidth() const
+    {
+        return mSettings.grfx.swapchain.width > 0 ? mSettings.grfx.swapchain.width : mSettings.window.width;
+    }
+    uint32_t GetRenderHeight() const
+    {
+        return mSettings.grfx.swapchain.height > 0 ? mSettings.grfx.swapchain.height : mSettings.window.height;
+    }
 
     // Loads a DXIL or SPV shader from baseDir.
     //
@@ -523,6 +551,7 @@ private:
     std::vector<grfx::SwapchainPtr> mSwapchains;                           // Requires enableDisplay
     std::unique_ptr<ImGuiImpl>      mImGui;
     KnobManager                     mKnobManager;
+    GlobalKnobs                     mGlobalKnobs;
 
     uint64_t          mFrameCount        = 0;
     uint32_t          mSwapchainIndex    = 0;
@@ -537,10 +566,10 @@ private:
     // Metrics
     struct
     {
-        metrics::Manager        manager;
-        metrics::MetricID       cpuFrameTimeId = metrics::kInvalidMetricID;
-        metrics::MetricID       framerateId    = metrics::kInvalidMetricID;
-        metrics::MetricID       frameCountId   = metrics::kInvalidMetricID;
+        metrics::Manager  manager;
+        metrics::MetricID cpuFrameTimeId = metrics::kInvalidMetricID;
+        metrics::MetricID framerateId    = metrics::kInvalidMetricID;
+        metrics::MetricID frameCountId   = metrics::kInvalidMetricID;
 
         double   framerateRecordTimer   = 0.0;
         uint64_t framerateFrameCount    = 0;

@@ -523,6 +523,9 @@ Result Application::CreateSwapchains()
             PPX_ASSERT_MSG(false, "grfx::Device::CreateSwapchain failed");
             return ppxres;
         }
+        if (mSettings.grfx.swapchain.width != 0) {
+            swapchain->SetRenderSize(mSettings.grfx.swapchain.width, mSettings.grfx.swapchain.height);
+        }
 #if defined(PPX_BUILD_XR)
         if (mSettings.xr.enable && mSettings.xr.enableDebugCapture) {
             mDebugCaptureSwapchainIndex = static_cast<uint32_t>(mSwapchains.size());
@@ -646,6 +649,30 @@ Result Application::CreatePlatformWindow()
 void Application::DestroyPlatformWindow()
 {
     mWindow->Destroy();
+}
+
+void Application::InitKnobs()
+{
+    std::array resolutions{
+        RenderResolution{0, 0, "window"},
+        RenderResolution{1280, 720, "720p"},
+        RenderResolution{1920, 1080, "1080p"},
+        RenderResolution{2560, 1440, "1440p"},
+        RenderResolution{3840, 2160, "4k"},
+        RenderResolution{5120, 2880, "5k"},
+        RenderResolution{7680, 4320, "8k"},
+        RenderResolution{256, 256},
+        RenderResolution{512, 512},
+        RenderResolution{1024, 1024},
+        RenderResolution{2048, 2048},
+        RenderResolution{4096, 4096},
+        RenderResolution{8192, 8192},
+        RenderResolution{16384, 16384},
+        RenderResolution{32768, 32768},
+    };
+    mGlobalKnobs.renderResolution =
+        GetKnobManager().CreateKnob<KnobDropdown<RenderResolution>>("render_resolution", 0, resolutions);
+    mGlobalKnobs.screenshot = GetKnobManager().CreateKnob<KnobTrigger>("screenshot");
 }
 
 void Application::DispatchInitKnobs()
@@ -1272,6 +1299,10 @@ int Application::Run(int argc, char** argv)
 #endif
         {
             mWindow->ProcessEvent();
+            if (mImGui && mGlobalKnobs.renderResolution->DigestUpdate()) {
+                auto res = mGlobalKnobs.renderResolution->GetValue();
+                mSwapchains[0]->SetRenderSize(res.width, res.height);
+            }
 
             // Start new Imgui frame
             if (mImGui && !IsWindowIconified()) {
@@ -1313,6 +1344,9 @@ int Application::Run(int argc, char** argv)
                 mForceInvalidateClientArea = false;
             }
 #endif
+        }
+        if (mGlobalKnobs.screenshot->DigestUpdate()) {
+            TakeScreenshot();
         }
 
         // Take screenshot if this is the requested frame.
@@ -1443,8 +1477,8 @@ grfx::Rect Application::GetScissor() const
     grfx::Rect rect = {};
     rect.x          = 0;
     rect.y          = 0;
-    rect.width      = GetWindowWidth();
-    rect.height     = GetWindowHeight();
+    rect.width      = GetRenderWidth();
+    rect.height     = GetRenderHeight();
     return rect;
 }
 
@@ -1453,8 +1487,8 @@ grfx::Viewport Application::GetViewport(float minDepth, float maxDepth) const
     grfx::Viewport viewport = {};
     viewport.x              = 0.0f;
     viewport.y              = 0.0f;
-    viewport.width          = static_cast<float>(GetWindowWidth());
-    viewport.height         = static_cast<float>(GetWindowHeight());
+    viewport.width          = static_cast<float>(GetRenderWidth());
+    viewport.height         = static_cast<float>(GetRenderHeight());
     viewport.minDepth       = minDepth;
     viewport.maxDepth       = maxDepth;
     return viewport;

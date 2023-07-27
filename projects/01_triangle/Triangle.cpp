@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "Triangle.h"
+#include "ppx/grfx/grfx_config.h"
 #include "ppx/ppx.h"
 using namespace ppx;
 
@@ -29,6 +30,7 @@ void TriangleApp::Config(ApplicationSettings& settings)
     settings.grfx.api         = kApi;
     settings.grfx.enableDebug = false;
     settings.window.resizable = true;
+    // settings.grfx.enableDebug = true;
 }
 
 void TriangleApp::Setup()
@@ -153,12 +155,15 @@ void TriangleApp::Render()
             frame.cmd->BindVertexBuffers(1, &mVertexBuffer, &mVertexBinding.GetStride());
             frame.cmd->Draw(3, 1, 0, 0);
 
-            // Draw ImGui
-            DrawDebugInfo();
+            if (ShouldDrawImGui()) {
+                // Draw ImGui
+                DrawDebugInfo();
 #if defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
-            DrawProfilerGrfxApiFunctions();
+                DrawProfilerGrfxApiFunctions();
 #endif // defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
-            DrawImGui(frame.cmd);
+                // DrawImGui(frame.cmd);
+                swapchain->RecordUI(imageIndex, [this](grfx::CommandBufferPtr p) {  DrawImGui(p); });
+            }
         }
         frame.cmd->EndRenderPass();
         frame.cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_PRESENT);

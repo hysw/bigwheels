@@ -138,6 +138,8 @@ void FishTornadoApp::Config(ppx::ApplicationSettings& settings)
     settings.grfx.swapchain.depthFormat = grfx::FORMAT_D32_FLOAT;
 
     settings.grfx.device.computeQueueCount = 1;
+
+    settings.window.resizable = true;
 }
 
 void FishTornadoApp::SetupDescriptorPool()
@@ -381,7 +383,7 @@ void FishTornadoApp::SetupDebug()
 
 void FishTornadoApp::SetupScene()
 {
-    mCamera.SetPerspective(45.0f, GetWindowAspect());
+    mCamera.SetPerspective(45.0f, GetRenderAspect());
     mCamera.LookAt(float3(135.312f, 64.086f, -265.332f), float3(0.0f, 100.0f, 0.0f));
     mCamera.MoveAlongViewDirection(-300.0f);
 
@@ -603,13 +605,15 @@ void FishTornadoApp::RenderSceneUsingSingleCommandBuffer(
             if (mSettings.renderOcean) {
                 mOcean.DrawForward(frameIndex, frame.cmd);
             }
-
-            // Draw ImGui
-            DrawDebugInfo();
+            if (ShouldDrawImGui()) {
+                GetKnobManager().DrawAllKnobs(true);
+                // Draw ImGui
+                DrawDebugInfo();
 #if defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
-            DrawProfilerGrfxApiFunctions();
+                DrawProfilerGrfxApiFunctions();
 #endif // defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
-            DrawImGui(frame.cmd);
+                swapchain->RecordUI(imageIndex, [this](grfx::CommandBufferPtr cb) { DrawImGui(cb); });
+            }
         }
         frame.cmd->EndRenderPass();
         frame.cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_PRESENT);
@@ -845,12 +849,15 @@ void FishTornadoApp::RenderSceneUsingMultipleCommandBuffers(
                 mOcean.DrawForward(frameIndex, frame.cmd);
             }
 
-            // Draw ImGui
-            DrawDebugInfo();
+            if (ShouldDrawImGui()) {
+                GetKnobManager().DrawAllKnobs(true);
+                // Draw ImGui
+                DrawDebugInfo();
 #if defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
-            DrawProfilerGrfxApiFunctions();
+                DrawProfilerGrfxApiFunctions();
 #endif // defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
-            DrawImGui(frame.cmd);
+                swapchain->RecordUI(imageIndex, [this](grfx::CommandBufferPtr cb) { DrawImGui(cb); });
+            }
         }
         frame.cmd->EndRenderPass();
         frame.cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_PRESENT);
