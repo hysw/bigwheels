@@ -272,7 +272,7 @@ Result ImGuiImplVk::InitApiObjects(ppx::Application* pApp)
         init_info.Allocator                 = VK_NULL_HANDLE;
         init_info.CheckVkResultFn           = nullptr;
 
-        grfx::RenderPassPtr renderPass = pApp->GetUISwapchain()->GetRenderPass(0, grfx::ATTACHMENT_LOAD_OP_LOAD);
+        grfx::RenderPassPtr renderPass = pApp->GetUISwapchain()->GetUIRenderPass(0);
         PPX_ASSERT_MSG(!renderPass.IsNull(), "[imgui:vk] failed to get swapchain renderpass");
 
         bool result = ImGui_ImplVulkan_Init(&init_info, grfx::vk::ToApi(renderPass)->GetVkRenderPass());
