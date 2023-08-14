@@ -679,6 +679,11 @@ void Application::DispatchConfig()
     }
 }
 
+void Application::Setup()
+{
+    mFrameData = InitFrameData(GetSwapchain()->GetImageCount());
+}
+
 void Application::DispatchSetup()
 {
     SetupMetrics();
@@ -1778,6 +1783,124 @@ void Application::UpdateAppMetrics()
             mMetrics.framerateFrameCount  = 0;
         }
     }
+}
+
+std::vector<std::unique_ptr<Application::FrameData>> Application::InitFrameData(size_t k)
+{
+    std::vector<std::unique_ptr<FrameData>> res;
+    for (size_t i = 0; i < k; ++i) {
+        FrameData frame = {};
+
+        grfx::SemaphoreCreateInfo semaCreateInfo = {};
+        PPX_CHECKED_CALL(GetDevice()->CreateSemaphore(&semaCreateInfo, &frame.imageAcquiredSemaphore));
+
+        grfx::FenceCreateInfo fenceCreateInfo = {};
+        PPX_CHECKED_CALL(GetDevice()->CreateFence(&fenceCreateInfo, &frame.imageAcquiredFence));
+
+        PPX_CHECKED_CALL(GetDevice()->CreateSemaphore(&semaCreateInfo, &frame.renderCompleteSemaphore));
+        PPX_CHECKED_CALL(GetDevice()->CreateSemaphore(&semaCreateInfo, &frame.uiCompleteSemaphore));
+
+        fenceCreateInfo = {true}; // Create signaled
+        PPX_CHECKED_CALL(GetDevice()->CreateFence(&fenceCreateInfo, &frame.renderCompleteFence));
+
+        PPX_CHECKED_CALL(GetGraphicsQueue()->CreateCommandBuffer(&frame.renderCmd));
+        PPX_CHECKED_CALL(GetGraphicsQueue()->CreateCommandBuffer(&frame.uiCmd));
+
+        res.push_back(std::make_unique<FrameData>(frame));
+    }
+    return res;
+}
+
+std::vector<const grfx::CommandBuffer*> Application::RecordRenderCommands(FrameData& frame, ppx::grfx::RenderPassPtr)
+{
+    PPX_CHECKED_CALL(frame.renderCmd->Begin());
+    PPX_CHECKED_CALL(frame.renderCmd->End());
+    return {frame.renderCmd.Get()};
+}
+
+std::vector<const grfx::CommandBuffer*> Application::RecordUICommands(FrameData& frame, ppx::grfx::RenderPassPtr renderPass)
+{
+    if (!mImGui) {
+        return {};
+    }
+    PPX_CHECKED_CALL(frame.uiCmd->Begin());
+    {
+        grfx::RenderPassBeginInfo beginInfo = {};
+        beginInfo.pRenderPass               = renderPass;
+        beginInfo.renderArea                = renderPass->GetRenderArea();
+        // renderPass should be a LOAD pass, so this clear value will not be used.
+        beginInfo.RTVClearCount     = 1;
+        beginInfo.RTVClearValues[0] = {{1, 0, 0, 1}};
+
+        frame.uiCmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_PRESENT, grfx::RESOURCE_STATE_RENDER_TARGET);
+        frame.uiCmd->BeginRenderPass(&beginInfo);
+        {
+            frame.uiCmd->SetScissors(GetScissor());
+            frame.uiCmd->SetViewports(GetViewport());
+
+            // Draw ImGui
+            DrawDebugInfo();
+#if defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
+            DrawProfilerGrfxApiFunctions();
+#endif // defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
+            DrawImGui(frame.uiCmd);
+        }
+        frame.uiCmd->EndRenderPass();
+        frame.uiCmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_PRESENT);
+    }
+    PPX_CHECKED_CALL(frame.uiCmd->End());
+    return {frame.uiCmd.Get()};
+}
+
+void Application::Render()
+{
+    PPX_ASSERT_MSG(!mFrameData.empty(), "FrameData not initialized.");
+    size_t     frameIndex = mFrameCount % mFrameData.size();
+    FrameData& frame      = *mFrameData[frameIndex];
+
+    grfx::SwapchainPtr swapchain = GetSwapchain();
+
+    uint32_t imageIndex = UINT32_MAX;
+    PPX_CHECKED_CALL(swapchain->AcquireNextImage(UINT64_MAX, frame.imageAcquiredSemaphore, frame.imageAcquiredFence, &imageIndex));
+
+    // Wait for and reset image acquired fence
+    PPX_CHECKED_CALL(frame.imageAcquiredFence->WaitAndReset());
+
+    // Wait for and reset render complete fence.
+    PPX_CHECKED_CALL(frame.renderCompleteFence->WaitAndReset());
+
+    grfx::RenderPassPtr renderPass   = swapchain->GetRenderPass(imageIndex);
+    grfx::RenderPassPtr uiRenderPass = swapchain->GetRenderPass(imageIndex, ppx::grfx::ATTACHMENT_LOAD_OP_LOAD);
+
+    std::vector<const grfx::CommandBuffer*> cmds   = RecordRenderCommands(frame, renderPass);
+    std::vector<const grfx::CommandBuffer*> uiCmds = RecordUICommands(frame, uiRenderPass);
+
+    grfx::SubmitInfo submitInfo     = {};
+    submitInfo.commandBufferCount   = static_cast<uint32_t>(cmds.size());
+    submitInfo.ppCommandBuffers     = cmds.data();
+    submitInfo.waitSemaphoreCount   = 1;
+    submitInfo.ppWaitSemaphores     = &frame.imageAcquiredSemaphore;
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.ppSignalSemaphores   = &frame.renderCompleteSemaphore;
+    submitInfo.pFence               = (uiCmds.empty() ? frame.renderCompleteFence : nullptr);
+    PPX_CHECKED_CALL(GetGraphicsQueue()->Submit(&submitInfo));
+    const grfx::Semaphore* const* presentSemaphore = &frame.renderCompleteSemaphore;
+
+    if (!uiCmds.empty()) {
+        grfx::SubmitInfo uiSubmitInfo     = {};
+        uiSubmitInfo.commandBufferCount   = static_cast<uint32_t>(cmds.size());
+        uiSubmitInfo.ppCommandBuffers     = uiCmds.data();
+        uiSubmitInfo.waitSemaphoreCount   = 1;
+        uiSubmitInfo.ppWaitSemaphores     = &frame.renderCompleteSemaphore;
+        uiSubmitInfo.signalSemaphoreCount = 1;
+        uiSubmitInfo.ppSignalSemaphores   = &frame.uiCompleteSemaphore;
+        uiSubmitInfo.pFence               = frame.renderCompleteFence;
+        PPX_CHECKED_CALL(GetGraphicsQueue()->Submit(&uiSubmitInfo));
+
+        presentSemaphore = &frame.uiCompleteSemaphore;
+    }
+
+    PPX_CHECKED_CALL(swapchain->Present(imageIndex, 1, presentSemaphore));
 }
 
 void Application::DrawDebugInfo()

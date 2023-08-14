@@ -333,7 +333,7 @@ public:
     static Application* Get();
 
     virtual void Config(ppx::ApplicationSettings& settings) {}
-    virtual void Setup() {}
+    virtual void Setup();
     virtual void Shutdown() {}
     virtual void Move(int32_t x, int32_t y) {}                                                // Window move event
     virtual void Resize(uint32_t width, uint32_t height) {}                                   // Window resize event
@@ -345,7 +345,24 @@ public:
     virtual void MouseDown(int32_t x, int32_t y, uint32_t buttons) {}                         // Mouse down event
     virtual void MouseUp(int32_t x, int32_t y, uint32_t buttons) {}                           // Mouse up event
     virtual void Scroll(float dx, float dy) {}                                                // Mouse wheel or touchpad scroll event
-    virtual void Render() {}
+    virtual void Render();
+
+    struct FrameData
+    {
+        grfx::SemaphorePtr imageAcquiredSemaphore;
+        grfx::FencePtr     imageAcquiredFence;
+        grfx::SemaphorePtr renderCompleteSemaphore;
+        grfx::SemaphorePtr uiCompleteSemaphore;
+        grfx::FencePtr     renderCompleteFence;
+
+        // A pre-allocated command buffer for render since most application needs it.
+        grfx::CommandBufferPtr renderCmd;
+        grfx::CommandBufferPtr uiCmd;
+    };
+    virtual std::vector<std::unique_ptr<FrameData>> InitFrameData(size_t k);
+
+    virtual std::vector<const grfx::CommandBuffer*> RecordRenderCommands(FrameData&, ppx::grfx::RenderPassPtr);
+    virtual std::vector<const grfx::CommandBuffer*> RecordUICommands(FrameData&, ppx::grfx::RenderPassPtr);
     // Init knobs (adjustable parameters in the GUI that can be set at startup with commandline flags)
     virtual void InitKnobs() {}
 
@@ -555,6 +572,8 @@ private:
     std::vector<grfx::SwapchainPtr> mSwapchains;                           // Requires enableDisplay
     std::unique_ptr<ImGuiImpl>      mImGui;
     KnobManager                     mKnobManager;
+
+    std::vector<std::unique_ptr<FrameData>> mFrameData;
 
     uint64_t          mFrameCount        = 0;
     uint32_t          mSwapchainIndex    = 0;

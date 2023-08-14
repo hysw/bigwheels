@@ -33,6 +33,7 @@ void TriangleApp::Config(ApplicationSettings& settings)
 
 void TriangleApp::Setup()
 {
+    Application::Setup();
     // Pipeline
     {
         std::vector<char> bytecode = LoadShader("basic/shaders", "StaticVertexColors.vs");
@@ -69,26 +70,6 @@ void TriangleApp::Setup()
         PPX_CHECKED_CALL(GetDevice()->CreateGraphicsPipeline(&gpCreateInfo, &mPipeline));
     }
 
-    // Per frame data
-    {
-        PerFrame frame = {};
-
-        PPX_CHECKED_CALL(GetGraphicsQueue()->CreateCommandBuffer(&frame.cmd));
-
-        grfx::SemaphoreCreateInfo semaCreateInfo = {};
-        PPX_CHECKED_CALL(GetDevice()->CreateSemaphore(&semaCreateInfo, &frame.imageAcquiredSemaphore));
-
-        grfx::FenceCreateInfo fenceCreateInfo = {};
-        PPX_CHECKED_CALL(GetDevice()->CreateFence(&fenceCreateInfo, &frame.imageAcquiredFence));
-
-        PPX_CHECKED_CALL(GetDevice()->CreateSemaphore(&semaCreateInfo, &frame.renderCompleteSemaphore));
-
-        fenceCreateInfo = {true}; // Create signaled
-        PPX_CHECKED_CALL(GetDevice()->CreateFence(&fenceCreateInfo, &frame.renderCompleteFence));
-
-        mPerFrame.push_back(frame);
-    }
-
     // Buffer and geometry data
     {
         // clang-format off
@@ -116,65 +97,33 @@ void TriangleApp::Setup()
     }
 }
 
-void TriangleApp::Render()
+std::vector<const grfx::CommandBuffer*> TriangleApp::RecordRenderCommands(FrameData& frame, ppx::grfx::RenderPassPtr renderPass)
 {
-    PerFrame& frame = mPerFrame[0];
-
-    grfx::SwapchainPtr swapchain = GetSwapchain();
-
-    uint32_t imageIndex = UINT32_MAX;
-    PPX_CHECKED_CALL(swapchain->AcquireNextImage(UINT64_MAX, frame.imageAcquiredSemaphore, frame.imageAcquiredFence, &imageIndex));
-
-    // Wait for and reset image acquired fence
-    PPX_CHECKED_CALL(frame.imageAcquiredFence->WaitAndReset());
-
-    // Wait for and reset render complete fence
-    PPX_CHECKED_CALL(frame.renderCompleteFence->WaitAndReset());
+    auto& cmd = frame.renderCmd;
 
     // Build command buffer
-    PPX_CHECKED_CALL(frame.cmd->Begin());
+    PPX_CHECKED_CALL(cmd->Begin());
     {
-        grfx::RenderPassPtr renderPass = swapchain->GetRenderPass(imageIndex);
-        PPX_ASSERT_MSG(!renderPass.IsNull(), "render pass object is null");
-
         grfx::RenderPassBeginInfo beginInfo = {};
         beginInfo.pRenderPass               = renderPass;
         beginInfo.renderArea                = renderPass->GetRenderArea();
         beginInfo.RTVClearCount             = 1;
         beginInfo.RTVClearValues[0]         = {{1, 0, 0, 1}};
 
-        frame.cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_PRESENT, grfx::RESOURCE_STATE_RENDER_TARGET);
-        frame.cmd->BeginRenderPass(&beginInfo);
+        cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_PRESENT, grfx::RESOURCE_STATE_RENDER_TARGET);
+        cmd->BeginRenderPass(&beginInfo);
         {
-            frame.cmd->SetScissors(GetScissor());
-            frame.cmd->SetViewports(GetViewport());
-            frame.cmd->BindGraphicsDescriptorSets(mPipelineInterface, 0, nullptr);
-            frame.cmd->BindGraphicsPipeline(mPipeline);
-            frame.cmd->BindVertexBuffers(1, &mVertexBuffer, &mVertexBinding.GetStride());
-            frame.cmd->Draw(3, 1, 0, 0);
-
-            // Draw ImGui
-            DrawDebugInfo();
-#if defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
-            DrawProfilerGrfxApiFunctions();
-#endif // defined(PPX_ENABLE_PROFILE_GRFX_API_FUNCTIONS)
-            DrawImGui(frame.cmd);
+            cmd->SetScissors(GetScissor());
+            cmd->SetViewports(GetViewport());
+            cmd->BindGraphicsDescriptorSets(mPipelineInterface, 0, nullptr);
+            cmd->BindGraphicsPipeline(mPipeline);
+            cmd->BindVertexBuffers(1, &mVertexBuffer, &mVertexBinding.GetStride());
+            cmd->Draw(3, 1, 0, 0);
         }
-        frame.cmd->EndRenderPass();
-        frame.cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_PRESENT);
+        cmd->EndRenderPass();
+        cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_PRESENT);
     }
-    PPX_CHECKED_CALL(frame.cmd->End());
+    PPX_CHECKED_CALL(cmd->End());
 
-    grfx::SubmitInfo submitInfo     = {};
-    submitInfo.commandBufferCount   = 1;
-    submitInfo.ppCommandBuffers     = &frame.cmd;
-    submitInfo.waitSemaphoreCount   = 1;
-    submitInfo.ppWaitSemaphores     = &frame.imageAcquiredSemaphore;
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.ppSignalSemaphores   = &frame.renderCompleteSemaphore;
-    submitInfo.pFence               = frame.renderCompleteFence;
-
-    PPX_CHECKED_CALL(GetGraphicsQueue()->Submit(&submitInfo));
-
-    PPX_CHECKED_CALL(swapchain->Present(imageIndex, 1, &frame.renderCompleteSemaphore));
+    return {cmd.Get()};
 }

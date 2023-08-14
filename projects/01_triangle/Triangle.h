@@ -24,19 +24,10 @@ class TriangleApp
 public:
     virtual void Config(ApplicationSettings& settings) override;
     virtual void Setup() override;
-    virtual void Render() override;
+
+    virtual std::vector<const grfx::CommandBuffer*> RecordRenderCommands(FrameData&, ppx::grfx::RenderPassPtr) override;
 
 private:
-    struct PerFrame
-    {
-        grfx::CommandBufferPtr cmd;
-        grfx::SemaphorePtr     imageAcquiredSemaphore;
-        grfx::FencePtr         imageAcquiredFence;
-        grfx::SemaphorePtr     renderCompleteSemaphore;
-        grfx::FencePtr         renderCompleteFence;
-    };
-
-    std::vector<PerFrame>      mPerFrame;
     grfx::ShaderModulePtr      mVS;
     grfx::ShaderModulePtr      mPS;
     grfx::PipelineInterfacePtr mPipelineInterface;
