@@ -403,6 +403,7 @@ public:
     float                      GetWindowAspect() const { return static_cast<float>(mSettings.window.width) / static_cast<float>(mSettings.window.height); }
     grfx::Rect                 GetScissor() const;
     grfx::Viewport             GetViewport(float minDepth = 0.0f, float maxDepth = 1.0f) const;
+    bool                       IsImGuiEnabled() const { return mImGui != nullptr; }
 
     // Loads a DXIL or SPV shader from baseDir.
     //

@@ -857,8 +857,6 @@ void ProjApp::Render()
                     frame.cmd->Draw(4, 1, 0, 0);
                 }
             }
-
-            DrawImGui(frame.cmd);
         }
         frame.cmd->EndRenderPass();
         frame.cmd->TransitionImageLayout(renderPass->GetRenderTargetImage(0), PPX_ALL_SUBRESOURCES, grfx::RESOURCE_STATE_RENDER_TARGET, grfx::RESOURCE_STATE_PRESENT);
@@ -868,6 +866,12 @@ void ProjApp::Render()
 
         // Resolve queries
         frame.cmd->ResolveQueryData(frame.timestampQuery, /* startIndex= */ 0, frame.timestampQuery->GetCount());
+    }
+    if (IsImGuiEnabled()) {
+        auto guiRenderPass = swapchain->GetRenderPass(imageIndex, grfx::ATTACHMENT_LOAD_OP_LOAD);
+        frame.cmd->BeginRenderPass(guiRenderPass);
+        DrawImGui(frame.cmd);
+        frame.cmd->EndRenderPass();
     }
     PPX_CHECKED_CALL(frame.cmd->End());
 
