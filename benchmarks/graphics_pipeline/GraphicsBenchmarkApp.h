@@ -69,6 +69,10 @@ static constexpr std::array<const char*, 3> kAvailableLODs = {
     "LOD_1",
     "LOD_2"};
 
+static constexpr std::array<const char*, 3> kFramebufferModes = {
+    "Direct",
+    "Offscreen"};
+
 static constexpr uint32_t kMeshCount = kAvailableVbFormats.size() * kAvailableVertexAttrLayouts.size() * kAvailableLODs.size();
 
 static constexpr std::array<const char*, 3> kFullscreenQuadsTypes = {
@@ -213,6 +217,24 @@ private:
     std::shared_ptr<KnobCheckbox>              pEnableSkyBox;
     std::shared_ptr<KnobCheckbox>              pAllTexturesTo1x1;
 
+    std::shared_ptr<KnobDropdown<std::string>> pFramebufferMode;
+    std::shared_ptr<KnobDropdown<std::string>> pFramebufferFormat;
+    std::shared_ptr<KnobSlider<int>>           pRenderWidth;
+    std::shared_ptr<KnobSlider<int>>           pRenderHeight;
+
+    struct FrameRenderPasses
+    {
+        grfx::RenderPassPtr loadRenderPass;
+        grfx::RenderPassPtr clearRenderPass;
+        grfx::RenderPassPtr discardRenderPass;
+        // The actual image
+        grfx::ImagePtr depthImage;
+        grfx::ImagePtr colorImage;
+    };
+
+    FrameRenderPasses FrameRenderPassesFromSwapchain(grfx::SwapchainPtr swapchain, uint32_t imageIndex);
+    ppx::Result InitOffscreenFrameRenderPasses(FrameRenderPasses&, grfx::Format colorFormat, grfx::Format depthFormat, uint32_t width, uint32_t height);
+
 private:
     // =====================================================================
     // SETUP (One-time setup for objects)
@@ -253,7 +275,7 @@ private:
     void DrawExtraInfo();
 
     // Record this frame's command buffer with multiple renderpasses
-    void RecordCommandBuffer(PerFrame& frame, grfx::SwapchainPtr swapchain, uint32_t imageIndex);
+    void RecordCommandBuffer(PerFrame& frame, const FrameRenderPasses& renderPasses, uint32_t imageIndex);
 
     // Records commands to render * in this frame's command buffer, with the current renderpass
     void RecordCommandBufferSkybox(PerFrame& frame);

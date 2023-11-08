@@ -19,6 +19,88 @@
 
 using namespace ppx;
 
+namespace {
+
+ppx::Result CreateRenderPass(grfx::DevicePtr device, grfx::ImagePtr colorImage, grfx::ImagePtr depthImage, grfx::AttachmentLoadOp loadOp, grfx::RenderPassPtr* out)
+{
+    PPX_ASSERT_MSG(out != nullptr, "output is nullptr");
+
+    grfx::RenderTargetViewPtr rtv;
+    grfx::DepthStencilViewPtr dsv;
+
+    {
+        grfx::RenderTargetViewCreateInfo rtvCreateInfo = grfx::RenderTargetViewCreateInfo::GuessFromImage(colorImage);
+        rtvCreateInfo.loadOp                           = loadOp;
+        rtvCreateInfo.ownership                        = grfx::OWNERSHIP_RESTRICTED;
+        Result ppxres                                  = device->CreateRenderTargetView(&rtvCreateInfo, &rtv);
+        if (ppxres != ppx::SUCCESS) {
+            return ppxres;
+        }
+    }
+
+    grfx::DepthStencilViewCreateInfo dsvCreateInfo = {};
+    if (depthImage) {
+        dsvCreateInfo               = grfx::DepthStencilViewCreateInfo::GuessFromImage(depthImage);
+        dsvCreateInfo.depthLoadOp   = ppx::grfx::ATTACHMENT_LOAD_OP_CLEAR;
+        dsvCreateInfo.stencilLoadOp = ppx::grfx::ATTACHMENT_LOAD_OP_CLEAR;
+        dsvCreateInfo.ownership     = ppx::grfx::OWNERSHIP_RESTRICTED;
+        Result ppxres               = device->CreateDepthStencilView(&dsvCreateInfo, &dsv);
+        if (ppxres != ppx::SUCCESS) {
+            return ppxres;
+        }
+    }
+
+    grfx::RenderPassCreateInfo rpCreateInfo = {};
+    rpCreateInfo.width                      = colorImage->GetWidth();
+    rpCreateInfo.height                     = colorImage->GetHeight();
+    rpCreateInfo.renderTargetCount          = 1;
+    rpCreateInfo.pRenderTargetViews[0]      = rtv;
+    rpCreateInfo.pDepthStencilView          = dsv;
+    rpCreateInfo.renderTargetClearValues[0] = {{0.0f, 0.0f, 0.0f, 0.0f}};
+    rpCreateInfo.depthStencilClearValue     = {1.0f, 0xFF};
+    rpCreateInfo.ownership                  = grfx::OWNERSHIP_RESTRICTED;
+
+    grfx::RenderPassPtr renderPass;
+    return device->CreateRenderPass(&rpCreateInfo, &*out);
+}
+/*
+
+uint32_t imageCount = CountU32(mColorImages);
+PPX_ASSERT_MSG((imageCount > 0), "No color images found for swapchain renderpasses");
+
+// Create render passes with grfx::ATTACHMENT_LOAD_OP_CLEAR for render target.
+for (size_t i = 0; i < imageCount; ++i) {
+
+    mClearRenderPasses.push_back(renderPass);
+}
+
+// Create render passes with grfx::ATTACHMENT_LOAD_OP_LOAD for render target.
+for (size_t i = 0; i < imageCount; ++i) {
+    grfx::RenderPassCreateInfo rpCreateInfo  = {};
+    rpCreateInfo.width                       = mCreateInfo.width;
+    rpCreateInfo.height                      = mCreateInfo.height;
+    rpCreateInfo.renderTargetCount           = 1;
+    rpCreateInfo.pRenderTargetViews[0]       = mLoadRenderTargets[i];
+    rpCreateInfo.pDepthStencilView           = mDepthImages.empty() ? nullptr : mDepthStencilViews[i];
+    rpCreateInfo.renderTargetClearValues[0]  = {{0.0f, 0.0f, 0.0f, 0.0f}};
+    rpCreateInfo.depthStencilClearValue      = {1.0f, 0xFF};
+    rpCreateInfo.ownership                   = grfx::OWNERSHIP_RESTRICTED;
+
+    grfx::RenderPassPtr renderPass;
+    auto                ppxres = GetDevice()->CreateRenderPass(&rpCreateInfo, &renderPass);
+    if (Failed(ppxres)) {
+        PPX_ASSERT_MSG(false, "grfx::Swapchain::CreateRenderPass(LOAD) failed");
+        return ppxres;
+    }
+
+    mLoadRenderPasses.push_back(renderPass);
+}
+
+return ppx::SUCCESS;
+
+*/
+} // namespace
+
 void GraphicsBenchmarkApp::InitKnobs()
 {
     const auto& cl_options = GetExtraOptions();
@@ -66,6 +148,7 @@ void GraphicsBenchmarkApp::InitKnobs()
     pDepthTestWrite->SetDisplayName("Depth Test & Write");
     pDepthTestWrite->SetFlagDescription("Enable depth test and depth write for spheres (Default: enabled).");
 
+<<<<<<< Updated upstream
     pEnableSkyBox = GetKnobManager().CreateKnob<ppx::KnobCheckbox>("enable-skybox", true);
     pEnableSkyBox->SetDisplayName("Enable SkyBox");
     pEnableSkyBox->SetFlagDescription("Enable the SkyBox in the scene.");
@@ -88,6 +171,12 @@ void GraphicsBenchmarkApp::InitKnobs()
     pFullscreenQuadsSingleRenderpass->SetDisplayName("Single Renderpass");
     pFullscreenQuadsSingleRenderpass->SetFlagDescription("Render all fullscreen quads (see --fullscreen-quads-count) in a single renderpass.");
     pFullscreenQuadsSingleRenderpass->SetIndent(1);
+=======
+    pFramebufferMode   = GetKnobManager().CreateKnob<ppx::KnobDropdown<std::string>>("framebuffer-mode", 0, kFramebufferModes);
+    pFramebufferFormat = GetKnobManager().CreateKnob<ppx::KnobDropdown<std::string>>("framebuffer-format", 0, std::vector<std::string>{{"RGBA"}});
+    pRenderWidth       = GetKnobManager().CreateKnob<ppx::KnobSlider<int>>("viewport-width", 1280, 1, 4096);
+    pRenderHeight      = GetKnobManager().CreateKnob<ppx::KnobSlider<int>>("viewport-height", 720, 1, 4096);
+>>>>>>> Stashed changes
 }
 
 void GraphicsBenchmarkApp::Config(ppx::ApplicationSettings& settings)
@@ -610,7 +699,9 @@ void GraphicsBenchmarkApp::Render()
     ProcessKnobs();
     UpdateGUI();
 
-    RecordCommandBuffer(frame, swapchain, imageIndex);
+    FrameRenderPasses renderPasses = FrameRenderPassesFromSwapchain(swapchain, imageIndex);
+
+    RecordCommandBuffer(frame, renderPasses, imageIndex);
 
     grfx::SubmitInfo submitInfo     = {};
     submitInfo.commandBufferCount   = 1;
@@ -684,7 +775,38 @@ void GraphicsBenchmarkApp::DrawExtraInfo()
     ImGui::NextColumn();
 }
 
-void GraphicsBenchmarkApp::RecordCommandBuffer(PerFrame& frame, grfx::SwapchainPtr swapchain, uint32_t imageIndex)
+GraphicsBenchmarkApp::FrameRenderPasses GraphicsBenchmarkApp::FrameRenderPassesFromSwapchain(grfx::SwapchainPtr swapchain, uint32_t imageIndex)
+{
+    const bool hasDepth = swapchain->GetDepthFormat() != ppx::grfx::Format::FORMAT_UNDEFINED;
+    return FrameRenderPasses{
+        swapchain->GetRenderPass(imageIndex, ppx::grfx::AttachmentLoadOp::ATTACHMENT_LOAD_OP_LOAD),
+        swapchain->GetRenderPass(imageIndex, ppx::grfx::AttachmentLoadOp::ATTACHMENT_LOAD_OP_CLEAR),
+        nullptr, // ATTACHMENT_LOAD_OP_DONT_CARE
+        swapchain->GetColorImage(imageIndex),
+        hasDepth ? swapchain->GetDepthImage(imageIndex) : nullptr};
+}
+
+ppx::Result GraphicsBenchmarkApp::InitOffscreenFrameRenderPasses(FrameRenderPasses& frame, grfx::Format colorFormat, grfx::Format depthFormat, uint32_t width, uint32_t height)
+{
+    {
+        grfx::ImageCreateInfo colorCreateInfo = grfx::ImageCreateInfo::RenderTarget2D(width, height, colorFormat);
+        ppx::Result           ppxres          = GetDevice()->CreateImage(&colorCreateInfo, &frame.colorImage);
+        if (ppxres != ppx::SUCCESS) {
+            return ppxres;
+        }
+    }
+    if (depthFormat != grfx::Format::FORMAT_UNDEFINED) {
+        grfx::ImageCreateInfo depthCreateInfo = grfx::ImageCreateInfo::DepthStencilTarget(width, height, depthFormat);
+        ppx::Result           ppxres          = GetDevice()->CreateImage(&depthCreateInfo, &frame.depthImage);
+        if (ppxres != ppx::SUCCESS) {
+            return ppxres;
+        }
+    }
+
+    return ppx::SUCCESS;
+}
+
+void GraphicsBenchmarkApp::RecordCommandBuffer(PerFrame& frame, const FrameRenderPasses& renderpasses, uint32_t imageIndex)
 {
     PPX_CHECKED_CALL(frame.cmd->Begin());
 
@@ -694,7 +816,11 @@ void GraphicsBenchmarkApp::RecordCommandBuffer(PerFrame& frame, grfx::SwapchainP
     frame.cmd->SetScissors(GetScissor());
     frame.cmd->SetViewports(GetViewport());
 
+<<<<<<< Updated upstream
     grfx::RenderPassPtr currentRenderPass = swapchain->GetRenderPass(imageIndex, grfx::ATTACHMENT_LOAD_OP_CLEAR);
+=======
+    grfx::RenderPassPtr currentRenderPass = renderpasses.clearRenderPass;
+>>>>>>> Stashed changes
     PPX_ASSERT_MSG(!currentRenderPass.IsNull(), "render pass object is null");
 
     // Transition image layout PRESENT->RENDER before the first renderpass
@@ -742,7 +868,7 @@ void GraphicsBenchmarkApp::RecordCommandBuffer(PerFrame& frame, grfx::SwapchainP
 
     // Record commands for the GUI using one last renderpass
     if (GetSettings()->enableImGui) {
-        currentRenderPass = swapchain->GetRenderPass(imageIndex, grfx::ATTACHMENT_LOAD_OP_LOAD);
+        currentRenderPass = renderpasses.loadRenderPass;
         PPX_ASSERT_MSG(!currentRenderPass.IsNull(), "render pass object is null");
         frame.cmd->BeginRenderPass(currentRenderPass);
         RecordCommandBufferGUI(frame);
