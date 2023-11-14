@@ -334,12 +334,12 @@ void GraphicsBenchmarkApp::SetupSphereResources()
 
     // Vertex Shaders
     for (size_t i = 0; i < kAvailableVsShaders.size(); i++) {
-        const std::string vsShaderBaseName = kAvailableVsShaders[i];
+        const std::string vsShaderBaseName = ToString(kAvailableVsShaders[i]);
         SetupShader(vsShaderBaseName + ".vs", &mVsShaders[i]);
     }
     // Pixel Shaders
     for (size_t j = 0; j < kAvailablePsShaders.size(); j++) {
-        const std::string psShaderBaseName = kAvailablePsShaders[j];
+        const std::string psShaderBaseName = ToString(kAvailablePsShaders[j]);
         SetupShader(psShaderBaseName + ".ps", &mPsShaders[j]);
     }
 }
@@ -433,17 +433,11 @@ void GraphicsBenchmarkApp::SetupSphereMeshes()
 {
     OrderedGrid grid(kMaxSphereInstanceCount, kSeed);
 
-    // LODs for spheres
-    mSphereLODs.push_back(LOD{/* longitudeSegments = */ 50, /* latitudeSegments = */ 50, kAvailableLODs[0]});
-    mSphereLODs.push_back(LOD{/* longitudeSegments = */ 20, /* latitudeSegments = */ 20, kAvailableLODs[1]});
-    mSphereLODs.push_back(LOD{/* longitudeSegments = */ 10, /* latitudeSegments = */ 10, kAvailableLODs[2]});
-    PPX_ASSERT_MSG(mSphereLODs.size() == kAvailableLODs.size(), "LODs for spheres must be the same as the available LODs");
-
     // Create the meshes
     uint32_t meshIndex = 0;
-    for (LOD lod : mSphereLODs) {
-        PPX_LOG_INFO("LOD: " << lod.name);
-        SphereMesh sphereMesh(/* radius = */ 1, lod.longitudeSegments, lod.latitudeSegments);
+    for (const auto& lod : kAvailableLODs) {
+        PPX_LOG_INFO("LOD: " << lod.Name());
+        SphereMesh sphereMesh(/* radius = */ 1, lod.Value().longitudeSegments, lod.Value().latitudeSegments);
         sphereMesh.ApplyGrid(grid);
 
         // Create a giant vertex buffer for each vb type to accommodate all copies of the sphere mesh
@@ -452,6 +446,8 @@ void GraphicsBenchmarkApp::SetupSphereMeshes()
         PPX_CHECKED_CALL(grfx_util::CreateMeshFromGeometry(GetGraphicsQueue(), sphereMesh.GetHighPrecisionInterleaved(), &mSphereMeshes[meshIndex++]));
         PPX_CHECKED_CALL(grfx_util::CreateMeshFromGeometry(GetGraphicsQueue(), sphereMesh.GetHighPrecisionPositionPlanar(), &mSphereMeshes[meshIndex++]));
     }
+
+    mSpheresAreSetUp = true;
 }
 
 void GraphicsBenchmarkApp::SetupFullscreenQuadsMeshes()
@@ -670,7 +666,7 @@ void GraphicsBenchmarkApp::ProcessKnobs()
     const bool enableSpheres = pEnableSpheres->GetValue();
     // If the LOD is empty, assuming we skipped the setup for all sphere resources at start
     // So need to do the intial setup for all resources here
-    const bool spheresAreSetUp               = !mSphereLODs.empty();
+    const bool spheresAreSetUp               = mSpheresAreSetUp;
     const bool updateSphereDescriptors       = spheresAreSetUp && allTexturesTo1x1KnobChanged;
     const bool setupSphereResourcesAndMeshes = (!spheresAreSetUp) && enableSpheres;
     const bool rebuildSpherePipeline         = setupSphereResourcesAndMeshes || (spheresAreSetUp && (alphaBlendKnobChanged || depthTestWriteKnobChanged));
@@ -694,7 +690,7 @@ void GraphicsBenchmarkApp::ProcessKnobs()
         pAlphaBlend->SetVisible(enableSpheres);
         pDepthTestWrite->SetVisible(enableSpheres);
     }
-    pAllTexturesTo1x1->SetVisible(enableSpheres && (pKnobPs->GetIndex() == static_cast<size_t>(SpherePS::SPHERE_PS_MEM_BOUND)));
+    pAllTexturesTo1x1->SetVisible(enableSpheres && (pKnobPs->GetValue() == SpherePS::SPHERE_PS_MEM_BOUND));
 
     // Update sphere resources and mesh
     if (setupSphereResourcesAndMeshes) {
@@ -1119,7 +1115,7 @@ void GraphicsBenchmarkApp::RecordCommandBufferFullscreenQuad(PerFrame& frame, si
             else {
                 intensity = (1.0f - (index / 10.f));
             }
-            float3 colorValues = kFullscreenQuadsColorsValues[pFullscreenQuadsColor->GetIndex()];
+            float3 colorValues = pFullscreenQuadsColor->GetValue();
             colorValues *= intensity;
             frame.cmd->PushGraphicsConstants(mQuadsPipelineInterfaces[1], 3, &colorValues);
             break;
