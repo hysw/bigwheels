@@ -19,11 +19,13 @@
 #include "MultiDimensionalIndexer.h"
 
 #include "ppx/grfx/grfx_config.h"
+#include "ppx/grfx/grfx_format.h"
 #include "ppx/knob.h"
 #include "ppx/math_config.h"
 #include "ppx/ppx.h"
 
 #include <array>
+#include <cstdint>
 #include <vector>
 
 #if defined(USE_DX12)
@@ -32,7 +34,7 @@ const grfx::Api kApi = grfx::API_DX_12_0;
 const grfx::Api kApi = grfx::API_VK_1_1;
 #endif
 
-static constexpr uint32_t kMaxSphereInstanceCount  = 3000;
+static constexpr uint32_t kMaxSphereInstanceCount  = 300;
 static constexpr uint32_t kSeed                    = 89977;
 static constexpr uint32_t kMaxFullscreenQuadsCount = 1000;
 
@@ -123,6 +125,11 @@ static constexpr std::array<DropdownEntry<float3>, 4> kFullscreenQuadsColors = {
     {"White", float3(1.0f, 1.0f, 1.0f)},
 }};
 
+static constexpr std::array<grfx::Format, 2> kFrameBufferFormatType = {
+    grfx::Format::FORMAT_B8G8R8A8_UNORM,
+    grfx::Format::FORMAT_R32G32B32A32_FLOAT,
+};
+
 class GraphicsBenchmarkApp
     : public ppx::Application
 {
@@ -191,6 +198,47 @@ private:
         std::vector<grfx::DescriptorSetPtr> descriptorSets;
     };
 
+    struct RenderPasses
+    {
+        grfx::RenderPassPtr loadRenderPass;
+        grfx::RenderPassPtr clearRenderPass;
+        grfx::RenderPassPtr noloadRenderPass;
+        grfx::RenderPassPtr uiRenderPass;
+        grfx::RenderPassPtr blitRenderPass;
+    };
+
+    struct OffscreenBuffers
+    {
+        uint32_t width;
+        uint32_t height;
+
+        grfx::Format colorFormat;
+        grfx::Format depthFormat;
+
+        grfx::RenderPassPtr loadRenderPass;
+        grfx::RenderPassPtr clearRenderPass;
+        grfx::RenderPassPtr noloadRenderPass;
+
+        grfx::RenderTargetViewPtr renderTargetViews[3];
+        grfx::DepthStencilViewPtr depthStencilView;
+        // The actual image
+        grfx::ImagePtr depthImage;
+        grfx::ImagePtr colorImage;
+
+        grfx::TexturePtr blitSource;
+    };
+
+    struct BlitContext
+    {
+        grfx::ShaderModulePtr vs;
+        grfx::ShaderModulePtr ps;
+
+        grfx::BufferPtr              vertexBuffer;
+        grfx::DescriptorSetLayoutPtr descriptorSetLayout;
+        grfx::FullscreenQuadPtr      quad;
+        grfx::DescriptorSetPtr       descriptorSet;
+    };
+
 private:
     std::vector<PerFrame>             mPerFrame;
     FreeCamera                        mCamera;
@@ -200,6 +248,7 @@ private:
     uint64_t                          mGpuWorkDuration;
     grfx::SamplerPtr                  mLinearSampler;
     grfx::DescriptorPoolPtr           mDescriptorPool;
+    std::vector<OffscreenBuffers>     mOffscreenFrame;
 
     // SkyBox resources
     Entity                mSkyBox;
@@ -229,6 +278,8 @@ private:
     std::array<grfx::PipelineInterfacePtr, kFullscreenQuadsTypes.size()> mQuadsPipelineInterfaces;
     std::array<grfx::ShaderModulePtr, kFullscreenQuadsTypes.size()>      mQuadsPs;
 
+    BlitContext mBlit;
+
 private:
     std::shared_ptr<KnobDropdown<SphereVS>>            pKnobVs;
     std::shared_ptr<KnobDropdown<SpherePS>>            pKnobPs;
@@ -246,6 +297,12 @@ private:
     std::shared_ptr<KnobCheckbox>                      pEnableSkyBox;
     std::shared_ptr<KnobCheckbox>                      pEnableSpheres;
     std::shared_ptr<KnobCheckbox>                      pAllTexturesTo1x1;
+
+    std::shared_ptr<KnobCheckbox>               pRenderOffscreen;
+    std::shared_ptr<KnobCheckbox>               pBlitOffscreen;
+    std::shared_ptr<KnobSlider<int>>            pViewportWidth;
+    std::shared_ptr<KnobSlider<int>>            pViewportHeight;
+    std::shared_ptr<KnobDropdown<grfx::Format>> pFrameBufferFormat;
 
 private:
     // =====================================================================
@@ -293,7 +350,7 @@ private:
     void DrawExtraInfo();
 
     // Record this frame's command buffer with multiple renderpasses
-    void RecordCommandBuffer(PerFrame& frame, grfx::SwapchainPtr swapchain, uint32_t imageIndex);
+    void RecordCommandBuffer(PerFrame& frame, const RenderPasses& renderPasses, uint32_t imageIndex);
 
     // Records commands to render * in this frame's command buffer, with the current renderpass
     void RecordCommandBufferSkyBox(PerFrame& frame);
@@ -311,6 +368,14 @@ private:
 
     // Loads shader at shaderBaseDir/fileName and creates it at ppShaderModule
     void SetupShader(const std::filesystem::path& fileName, grfx::ShaderModule** ppShaderModule);
+
+    RenderPasses SwapchainRenderPasses(grfx::SwapchainPtr swapchain, uint32_t imageIndex);
+    RenderPasses OffscreenRenderPasses(const OffscreenBuffers&);
+    ppx::Result  CreateOffscreenOffscreenBuffers(OffscreenBuffers&, grfx::Format colorFormat, grfx::Format depthFormat, uint32_t width, uint32_t height);
+    ppx::Result  CreateBlitContext(BlitContext& blit);
+    void         DestroyOffscreenOffscreenBuffers(OffscreenBuffers&);
+    ppx::grfx::Format RenderFormat();
+
 };
 
 #endif // BENCHMARKS_GRAPHICS_PIPELINE_GRAPHICS_BENCHMARK_APP_H

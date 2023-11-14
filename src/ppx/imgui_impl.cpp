@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "ppx/imgui_impl.h"
+#include "imgui.h"
 #include "ppx/imgui/font_inconsolata.h"
 #include "ppx/application.h"
 #include "ppx/grfx/grfx_device.h"
@@ -129,6 +130,8 @@ Result ImGuiImpl::Init(ppx::Application* pApp)
     if (Failed(ppxres)) {
         return ppxres;
     }
+
+    ImGui::GetStyle().ScaleAllSizes(3.0f);
 
     return ppx::SUCCESS;
 }
