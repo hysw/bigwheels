@@ -488,12 +488,18 @@ void GraphicsBenchmarkApp::SetupSkyBoxMeshes()
 
 void GraphicsBenchmarkApp::SetupSphereMeshes()
 {
-    OrderedGrid grid(kMaxSphereInstanceCount, kSeed);
+    const uint32_t requiredSphereCount = std::max<uint32_t>(static_cast<uint32_t>(pSphereInstanceCount->GetValue()), 50);
+    const uint32_t initSphereCount     = std::min<uint32_t>(kMaxSphereInstanceCount, std::max<uint32_t>(requiredSphereCount*3/2, mInitializedSpheres * 2));
+
+    OrderedGrid grid(initSphereCount, kSeed);
+    mInitializedSpheres = initSphereCount;
 
     // LODs for spheres
-    mSphereLODs.push_back(LOD{/* longitudeSegments = */ 50, /* latitudeSegments = */ 50, kAvailableLODs[0]});
-    mSphereLODs.push_back(LOD{/* longitudeSegments = */ 20, /* latitudeSegments = */ 20, kAvailableLODs[1]});
-    mSphereLODs.push_back(LOD{/* longitudeSegments = */ 10, /* latitudeSegments = */ 10, kAvailableLODs[2]});
+    if (mSphereLODs.empty()) {
+        mSphereLODs.push_back(LOD{/* longitudeSegments = */ 50, /* latitudeSegments = */ 50, kAvailableLODs[0]});
+        mSphereLODs.push_back(LOD{/* longitudeSegments = */ 20, /* latitudeSegments = */ 20, kAvailableLODs[1]});
+        mSphereLODs.push_back(LOD{/* longitudeSegments = */ 10, /* latitudeSegments = */ 10, kAvailableLODs[2]});
+    }
     PPX_ASSERT_MSG(mSphereLODs.size() == kAvailableLODs.size(), "LODs for spheres must be the same as the available LODs");
 
     // Create the meshes
@@ -822,13 +828,14 @@ void GraphicsBenchmarkApp::ProcessKnobs()
     const bool alphaBlendKnobChanged       = pAlphaBlend->DigestUpdate();
     const bool depthTestWriteKnobChanged   = pDepthTestWrite->DigestUpdate();
     const bool enableSpheresKnobChanged    = pEnableSpheres->DigestUpdate();
+    const bool requireMoreSpheres          = (pSphereInstanceCount->GetValue() > mInitializedSpheres);
 
     const bool enableSpheres = pEnableSpheres->GetValue();
     // If the LOD is empty, assuming we skipped the setup for all sphere resources at start
     // So need to do the intial setup for all resources here
     const bool spheresAreSetUp               = !mSphereLODs.empty();
     const bool updateSphereDescriptors       = spheresAreSetUp && allTexturesTo1x1KnobChanged;
-    const bool setupSphereResourcesAndMeshes = (!spheresAreSetUp) && enableSpheres;
+    const bool setupSphereResourcesAndMeshes = (!spheresAreSetUp) || requireMoreSpheres && enableSpheres;
     const bool rebuildSpherePipeline         = setupSphereResourcesAndMeshes || (spheresAreSetUp && (alphaBlendKnobChanged || depthTestWriteKnobChanged));
 
     // TODO: Ideally, the `maxValue` of the drawcall-count slider knob should be changed at runtime.
@@ -1108,6 +1115,14 @@ void GraphicsBenchmarkApp::DrawExtraInfo()
     GetGraphicsQueue()->GetTimestampFrequency(&frequency);
 
     ImGui::Columns(2);
+
+    if(mInitializedSpheres) {
+        ImGui::Text("Initialized Spheres");
+        ImGui::NextColumn();
+        ImGui::Text("%d ", static_cast<int>(mInitializedSpheres));
+        ImGui::NextColumn();
+    }
+
     ImGui::Text("CPU Average Submission Time");
     ImGui::NextColumn();
     ImGui::Text("%.2f ms ", mSubmissionTime.average);

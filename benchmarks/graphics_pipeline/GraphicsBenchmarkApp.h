@@ -404,6 +404,7 @@ private:
     std::array<grfx::MeshPtr, kMeshCount>                         mSphereMeshes;
     std::vector<LOD>                                              mSphereLODs;
     MultiDimensionalIndexer                                       mMeshesIndexer;
+    uint32_t                                                      mInitializedSpheres = 0;
 
     // Fullscreen quads resources
     Entity2D                                                             mFullscreenQuads;
