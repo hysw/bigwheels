@@ -282,6 +282,28 @@ TEST_F(KnobTestFixture, KnobDropdown_CreateAndSetBasicMembers)
     EXPECT_EQ(strKnob.GetValue(), "c2");
 }
 
+TEST_F(KnobTestFixture, KnobDropdown_CreateNumbers)
+{
+    std::vector<int>  choices = {1, 2, 3, 5, 8};
+    KnobDropdown<int> strKnob = KnobDropdown<int>("flag_name1", 1, choices.cbegin(), choices.cend());
+    EXPECT_EQ(strKnob.GetIndex(), 1);
+    EXPECT_EQ(strKnob.GetValue(), 2);
+    strKnob.SetIndex("3");
+    EXPECT_EQ(strKnob.GetIndex(), 2);
+    EXPECT_EQ(strKnob.GetValue(), 3);
+}
+
+TEST_F(KnobTestFixture, KnobDropdown_CreateCustom)
+{
+    std::vector<DropdownEntry<int>> choices = {{"a", 1}, {"b", 2}, {"c", 3}};
+    KnobDropdown<int>               strKnob = KnobDropdown<int>("flag_name1", 1, choices.cbegin(), choices.cend());
+    EXPECT_EQ(strKnob.GetIndex(), 1);
+    EXPECT_EQ(strKnob.GetValue(), 2);
+    strKnob.SetIndex("c");
+    EXPECT_EQ(strKnob.GetIndex(), 2);
+    EXPECT_EQ(strKnob.GetValue(), 3);
+}
+
 TEST_F(KnobTestFixture, KnobDropdown_CreateVaried)
 {
     std::vector<std::string>  choices1 = {"c1", "c2"};
