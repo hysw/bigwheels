@@ -117,7 +117,9 @@ void XrComponent::InitializeBeforeGrfxDeviceInit(const XrComponentCreateInfo& cr
     }
 
     std::vector<const char*> xrInstanceExtensions;
+    std::vector<const char*> xrInstanceOptionalExtensions;
     xrInstanceExtensions.push_back(graphicsAPIExtension);
+    xrInstanceOptionalExtensions.push_back(XR_EXT_HAND_INTERACTION_EXTENSION_NAME);
 #if defined(PPX_ANDROID)
     XrLoaderInitInfoAndroidKHR loaderInitInfoAndroid = {XR_TYPE_LOADER_INIT_INFO_ANDROID_KHR};
     loaderInitInfoAndroid.applicationVM              = createInfo.androidContext->activity->vm;
@@ -143,6 +145,11 @@ void XrComponent::InitializeBeforeGrfxDeviceInit(const XrComponentCreateInfo& cr
     xrEnumerateInstanceExtensionProperties(nullptr, extCount, &extCount, xrExts.data());
     for (const auto& ext : xrInstanceExtensions) {
         PPX_ASSERT_MSG(IsXrExtensionSupported(xrExts, ext), "OpenXR extension not supported. Check that your OpenXR runtime is loaded properly.");
+    }
+    for (const auto& ext : xrInstanceOptionalExtensions) {
+        if (IsXrExtensionSupported(xrExts, ext)) {
+            xrInstanceExtensions.push_back(ext);
+        }
     }
 
     // Optional extensions.
@@ -331,18 +338,43 @@ XrResult XrComponent::InitializeInteractionProfile()
     CHECK_XR_CALL_RETURN_ON_FAIL(xrStringToPath(mInstance, "/user/hand/right/input/select/click", &selectClickPath));
     XrPath pointingPath;
     CHECK_XR_CALL_RETURN_ON_FAIL(xrStringToPath(mInstance, "/user/hand/right/input/aim/pose", &pointingPath));
+    {
+        XrActionSuggestedBinding bindings[2];
+        bindings[0].action  = mImguiClickAction;
+        bindings[0].binding = selectClickPath;
+        bindings[1].action  = mImguiPointingAction;
+        bindings[1].binding = pointingPath;
 
-    XrActionSuggestedBinding bindings[2];
-    bindings[0].action  = mImguiClickAction;
-    bindings[0].binding = selectClickPath;
-    bindings[1].action  = mImguiPointingAction;
-    bindings[1].binding = pointingPath;
+        XrInteractionProfileSuggestedBinding suggestedBindings{XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING};
+        suggestedBindings.interactionProfile     = khrSimpleControllerPath;
+        suggestedBindings.suggestedBindings      = bindings;
+        suggestedBindings.countSuggestedBindings = static_cast<uint32_t>(std::size(bindings));
+        CHECK_XR_CALL_RETURN_ON_FAIL(xrSuggestInteractionProfileBindings(mInstance, &suggestedBindings));
+    }
+    {
+        XrPath   handInteractionPath   = XR_NULL_PATH;
+        XrResult handInteractionResult = xrStringToPath(mInstance, "/interaction_profiles/ext/hand_interaction_ext", &handInteractionPath);
 
-    XrInteractionProfileSuggestedBinding suggestedBindings{XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING};
-    suggestedBindings.interactionProfile     = khrSimpleControllerPath;
-    suggestedBindings.suggestedBindings      = bindings;
-    suggestedBindings.countSuggestedBindings = static_cast<uint32_t>(std::size(bindings));
-    CHECK_XR_CALL_RETURN_ON_FAIL(xrSuggestInteractionProfileBindings(mInstance, &suggestedBindings));
+        XrPath aimActivatePath = XR_NULL_PATH;
+        if (handInteractionResult == XR_SUCCESS) {
+            handInteractionResult = xrStringToPath(mInstance, "/user/hand/right/input/aim_activate_ext/value", &aimActivatePath);
+        }
+
+        if (handInteractionResult == XR_SUCCESS) {
+            XrActionSuggestedBinding bindings[2];
+            bindings[0].action  = mImguiClickAction;
+            bindings[0].binding = aimActivatePath;
+            bindings[1].action  = mImguiPointingAction;
+            bindings[1].binding = pointingPath;
+
+            XrInteractionProfileSuggestedBinding suggestedBindings{XR_TYPE_INTERACTION_PROFILE_SUGGESTED_BINDING};
+            suggestedBindings.interactionProfile     = handInteractionPath;
+            suggestedBindings.suggestedBindings      = bindings;
+            suggestedBindings.countSuggestedBindings = static_cast<uint32_t>(std::size(bindings));
+            // Ignore result
+            handInteractionResult = xrSuggestInteractionProfileBindings(mInstance, &suggestedBindings);
+        }
+    }
 
     XrSessionActionSetsAttachInfo attachInfo{XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO};
     attachInfo.countActionSets = 1;
