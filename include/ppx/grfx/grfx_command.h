@@ -353,7 +353,7 @@ public:
     virtual void BindGraphicsDescriptorSets(
         const grfx::PipelineInterface*    pInterface,
         uint32_t                          setCount,
-        const grfx::DescriptorSet* const* ppSets) = 0;
+        AutoPtr<const grfx::DescriptorSet* const*> ppSets) = 0;
 
     //
     // Parameters count and dstOffset are measured in DWORDs (uint32_t) aka 32-bit values.
@@ -416,7 +416,7 @@ public:
     virtual void BindComputeDescriptorSets(
         const grfx::PipelineInterface*    pInterface,
         uint32_t                          setCount,
-        const grfx::DescriptorSet* const* ppSets) = 0;
+        AutoPtr<const grfx::DescriptorSet* const*> ppSets) = 0;
 
     // See comments at SetGraphicsPushConstants for explanation about count, pValues and dstOffset.
     virtual void PushComputeConstants(
@@ -587,7 +587,7 @@ public:
 
     void BindVertexBuffers(
         uint32_t                   bufferCount,
-        const grfx::Buffer* const* buffers,
+        AutoPtr<const grfx::Buffer* const*> buffers,
         const uint32_t*            pStrides,
         const uint64_t*            pOffsets = nullptr);
 
@@ -607,7 +607,7 @@ public:
     //          grfx::DescriptorSetPtr set;
     //          Draw(quad, 1, &set);
     //
-    void Draw(const grfx::FullscreenQuad* pQuad, uint32_t setCount, const grfx::DescriptorSet* const* ppSets);
+    void Draw(const grfx::FullscreenQuad* pQuad, uint32_t setCount, AutoPtr<const grfx::DescriptorSet* const*> ppSets);
 
 protected:
     struct DynamicRenderPassInfo

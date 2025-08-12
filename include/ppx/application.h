@@ -315,7 +315,7 @@ public:
     //     - loads shader file: some/path/shaders/spv/Texture.vs.spv   for API_VK_1_1, API_VK_1_2
     //
     std::vector<char> LoadShader(const std::filesystem::path& baseDir, const std::filesystem::path& baseName) const;
-    Result            CreateShader(const std::filesystem::path& baseDir, const std::filesystem::path& baseName, grfx::ShaderModule** ppShaderModule) const;
+    Result            CreateShader(const std::filesystem::path& baseDir, const std::filesystem::path& baseName, AutoPtr<grfx::ShaderModule**> ppShaderModule) const;
 
     Window*           GetWindow() const { return mWindow.get(); }
     grfx::InstancePtr GetInstance() const { return mInstance; }
@@ -331,7 +331,7 @@ public:
                     const grfx::SwapchainPtr&     swapchain,
                     uint32_t                      imageIndex,
                     uint32_t                      waitSemaphoreCount,
-                    const grfx::Semaphore* const* ppWaitSemaphores);
+                    AutoPtr<const grfx::Semaphore* const*> ppWaitSemaphores);
 
     float    GetElapsedSeconds() const;
     float    GetPrevFrameTime() const { return mPreviousFrameTime; }

@@ -52,7 +52,7 @@ void VertexBinding::SetStride(uint32_t stride)
     mStride = stride;
 }
 
-Result VertexBinding::GetAttribute(uint32_t index, const grfx::VertexAttribute** ppAttribute) const
+Result VertexBinding::GetAttribute(uint32_t index, AutoPtr<const grfx::VertexAttribute**> ppAttribute) const
 {
     if (!IsIndexInRange(index, mAttributes)) {
         return ppx::ERROR_OUT_OF_RANGE;
@@ -119,7 +119,7 @@ grfx::VertexBinding& VertexBinding::operator+=(const grfx::VertexAttribute& rhs)
 // -------------------------------------------------------------------------------------------------
 // VertexDescription
 // -------------------------------------------------------------------------------------------------
-Result VertexDescription::GetBinding(uint32_t index, const grfx::VertexBinding** ppBinding) const
+Result VertexDescription::GetBinding(uint32_t index, AutoPtr<const grfx::VertexBinding**> ppBinding) const
 {
     if (!IsIndexInRange(index, mBindings)) {
         return ppx::ERROR_OUT_OF_RANGE;

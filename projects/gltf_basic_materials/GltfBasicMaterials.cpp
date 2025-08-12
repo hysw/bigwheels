@@ -180,7 +180,7 @@ void GltfBasicMaterialsApp::Setup()
         // Get vertex bindings - every mesh in the test scene should have the same attributes
         auto vertexBindings = mScene->GetMeshNode(0)->GetMesh()->GetMeshData()->GetAvailableVertexBindings();
 
-        auto CreatePipeline = [this, &vertexBindings](const std::string& vsName, const std::string& psName, grfx::GraphicsPipeline** ppPipeline) {
+        auto CreatePipeline = [this, &vertexBindings](const std::string& vsName, const std::string& psName, AutoPtr<grfx::GraphicsPipeline**> ppPipeline) {
             std::vector<char> bytecode = LoadShader("scene_renderer/shaders", vsName);
             PPX_ASSERT_MSG(!bytecode.empty(), "VS shader bytecode load failed");
             grfx::ShaderModuleCreateInfo shaderCreateInfo = {static_cast<uint32_t>(bytecode.size()), bytecode.data()};

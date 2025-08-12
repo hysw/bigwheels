@@ -88,7 +88,7 @@ private:
     virtual Result PresentInternal(
         uint32_t                      imageIndex,
         uint32_t                      waitSemaphoreCount,
-        const grfx::Semaphore* const* ppWaitSemaphores) override;
+        AutoPtr<const grfx::Semaphore* const*> ppWaitSemaphores) override;
 
 private:
     VkSwapchainPtr mSwapchain;

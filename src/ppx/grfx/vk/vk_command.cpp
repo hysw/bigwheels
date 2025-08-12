@@ -637,7 +637,7 @@ void CommandBuffer::BindDescriptorSets(
     VkPipelineBindPoint               bindPoint,
     const grfx::PipelineInterface*    pInterface,
     uint32_t                          setCount,
-    const grfx::DescriptorSet* const* ppSets)
+    AutoPtr<const grfx::DescriptorSet* const*> ppSets)
 {
     PPX_ASSERT_NULL_ARG(pInterface);
 
@@ -712,7 +712,7 @@ void CommandBuffer::BindDescriptorSets(
 void CommandBuffer::BindGraphicsDescriptorSets(
     const grfx::PipelineInterface*    pInterface,
     uint32_t                          setCount,
-    const grfx::DescriptorSet* const* ppSets)
+    AutoPtr<const grfx::DescriptorSet* const*> ppSets)
 {
     BindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, pInterface, setCount, ppSets);
 }
@@ -769,7 +769,7 @@ void CommandBuffer::BindGraphicsPipeline(const grfx::GraphicsPipeline* pPipeline
 void CommandBuffer::BindComputeDescriptorSets(
     const grfx::PipelineInterface*    pInterface,
     uint32_t                          setCount,
-    const grfx::DescriptorSet* const* ppSets)
+    AutoPtr<const grfx::DescriptorSet* const*> ppSets)
 {
     BindDescriptorSets(VK_PIPELINE_BIND_POINT_COMPUTE, pInterface, setCount, ppSets);
 }

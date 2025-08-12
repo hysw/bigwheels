@@ -40,8 +40,8 @@ protected:
     virtual void   DestroyApiObjects() override;
 
 private:
-    D3D12ResourcePtr            mResource;
-    ObjPtr<D3D12MA::Allocation> mAllocation;
+    D3D12ResourcePtr     mResource;
+    D3D12MA::Allocation* mAllocation;
 };
 
 // -------------------------------------------------------------------------------------------------

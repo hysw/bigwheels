@@ -1477,7 +1477,7 @@ std::vector<char> Application::LoadShader(const std::filesystem::path& baseDir, 
     return bytecode.value();
 }
 
-Result Application::CreateShader(const std::filesystem::path& baseDir, const std::filesystem::path& baseName, grfx::ShaderModule** ppShaderModule) const
+Result Application::CreateShader(const std::filesystem::path& baseDir, const std::filesystem::path& baseName, AutoPtr<grfx::ShaderModule**> ppShaderModule) const
 {
     std::vector<char> bytecode = LoadShader(baseDir, baseName);
     if (bytecode.empty()) {
@@ -1503,7 +1503,7 @@ Result Application::Present(
     const grfx::SwapchainPtr&     swapchain,
     uint32_t                      imageIndex,
     uint32_t                      waitSemaphoreCount,
-    const grfx::Semaphore* const* ppWaitSemaphores)
+    AutoPtr<const grfx::Semaphore* const*> ppWaitSemaphores)
 {
     Result ppxres = swapchain->Present(imageIndex, waitSemaphoreCount, ppWaitSemaphores);
     if (!ppxres) {

@@ -41,7 +41,7 @@ protected:
 private:
     D3D12ResourcePtr            mResource;
     D3D12_HEAP_TYPE             mHeapType;
-    ObjPtr<D3D12MA::Allocation> mAllocation;
+    D3D12MA::Allocation* mAllocation;
 };
 
 } // namespace dx12

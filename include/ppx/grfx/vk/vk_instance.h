@@ -39,9 +39,9 @@ public:
 #endif
 
 protected:
-    virtual Result AllocateObject(grfx::Device** ppDevice) override;
-    virtual Result AllocateObject(grfx::Gpu** ppGpu) override;
-    virtual Result AllocateObject(grfx::Surface** ppSurface) override;
+    virtual Result AllocateObject(AutoPtr<grfx::Device**> ppDevice) override;
+    virtual Result AllocateObject(AutoPtr<grfx::Gpu**> ppGpu) override;
+    virtual Result AllocateObject(AutoPtr<grfx::Surface**> ppSurface) override;
 
 protected:
     virtual Result CreateApiObjects(const grfx::InstanceCreateInfo* pCreateInfo) override;

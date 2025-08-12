@@ -129,11 +129,11 @@ public:
     grfx::Format GetColorFormat() const { return mCreateInfo.colorFormat; }
     grfx::Format GetDepthFormat() const { return mCreateInfo.depthFormat; }
 
-    Result GetColorImage(uint32_t imageIndex, grfx::Image** ppImage) const;
-    Result GetDepthImage(uint32_t imageIndex, grfx::Image** ppImage) const;
-    Result GetRenderPass(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, grfx::RenderPass** ppRenderPass) const;
-    Result GetRenderTargetView(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, grfx::RenderTargetView** ppView) const;
-    Result GetDepthStencilView(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, grfx::DepthStencilView** ppView) const;
+    Result GetColorImage(uint32_t imageIndex, AutoPtr<grfx::Image**> ppImage) const;
+    Result GetDepthImage(uint32_t imageIndex, AutoPtr<grfx::Image**> ppImage) const;
+    Result GetRenderPass(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, AutoPtr<grfx::RenderPass**> ppRenderPass) const;
+    Result GetRenderTargetView(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, AutoPtr<grfx::RenderTargetView**> ppView) const;
+    Result GetDepthStencilView(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, AutoPtr<grfx::DepthStencilView**> ppView) const;
 
     // Convenience functions - returns empty object if index is invalid
     grfx::ImagePtr            GetColorImage(uint32_t imageIndex) const;
@@ -151,7 +151,7 @@ public:
     Result Present(
         uint32_t                      imageIndex,
         uint32_t                      waitSemaphoreCount,
-        const grfx::Semaphore* const* ppWaitSemaphores);
+        AutoPtr<const grfx::Semaphore* const*> ppWaitSemaphores);
 
     uint32_t GetCurrentImageIndex() const { return mCurrentImageIndex; }
 
@@ -197,7 +197,7 @@ private:
     virtual Result PresentInternal(
         uint32_t                      imageIndex,
         uint32_t                      waitSemaphoreCount,
-        const grfx::Semaphore* const* ppWaitSemaphores) = 0;
+        AutoPtr<const grfx::Semaphore* const*> ppWaitSemaphores) = 0;
 
     Result AcquireNextImageHeadless(
         uint64_t         timeout,
@@ -208,7 +208,7 @@ private:
     Result PresentHeadless(
         uint32_t                      imageIndex,
         uint32_t                      waitSemaphoreCount,
-        const grfx::Semaphore* const* ppWaitSemaphores);
+        AutoPtr<const grfx::Semaphore* const*> ppWaitSemaphores);
 
     std::vector<grfx::CommandBufferPtr> mHeadlessCommandBuffers;
 

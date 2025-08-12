@@ -80,7 +80,7 @@ template <
     typename ObjectT,
     typename CreateInfoT,
     typename ContainerT>
-Result Instance::CreateObject(const CreateInfoT* pCreateInfo, ContainerT& container, ObjectT** ppObject)
+Result Instance::CreateObject(const CreateInfoT* pCreateInfo, ContainerT& container, AutoPtr<ObjectT**> ppObject)
 {
     // Allocate object
     ObjectT* pObject = nullptr;
@@ -149,7 +149,7 @@ void Instance::DestroyAllObjects(std::vector<ObjPtr<ObjectT>>& container)
     container.clear();
 }
 
-Result Instance::GetGpu(uint32_t index, grfx::Gpu** ppGpu) const
+Result Instance::GetGpu(uint32_t index, AutoPtr<grfx::Gpu**> ppGpu) const
 {
     PPX_ASSERT_NULL_ARG(ppGpu);
     if (!IsIndexInRange(index, mGpus)) {
@@ -160,7 +160,7 @@ Result Instance::GetGpu(uint32_t index, grfx::Gpu** ppGpu) const
     return ppx::SUCCESS;
 }
 
-Result Instance::GetDevice(uint32_t index, grfx::Device** ppDevice) const
+Result Instance::GetDevice(uint32_t index, AutoPtr<grfx::Device**> ppDevice) const
 {
     PPX_ASSERT_NULL_ARG(ppDevice);
     if (!IsIndexInRange(index, mDevices)) {
@@ -171,7 +171,7 @@ Result Instance::GetDevice(uint32_t index, grfx::Device** ppDevice) const
     return ppx::SUCCESS;
 }
 
-Result Instance::CreateDevice(const grfx::DeviceCreateInfo* pCreateInfo, grfx::Device** ppDevice)
+Result Instance::CreateDevice(const grfx::DeviceCreateInfo* pCreateInfo, AutoPtr<grfx::Device**> ppDevice)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppDevice);
@@ -191,7 +191,7 @@ void Instance::DestroyDevice(const grfx::Device* pDevice)
     DestroyObject(mDevices, pDevice);
 }
 
-Result Instance::CreateSurface(const grfx::SurfaceCreateInfo* pCreateInfo, grfx::Surface** ppSurface)
+Result Instance::CreateSurface(const grfx::SurfaceCreateInfo* pCreateInfo, AutoPtr<grfx::Surface**> ppSurface)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppSurface);
@@ -208,7 +208,7 @@ void Instance::DestroySurface(const grfx::Surface* pSurface)
     DestroyObject(mSurfaces, pSurface);
 }
 
-Result Instance::CreateGpu(const grfx::internal::GpuCreateInfo* pCreateInfo, grfx::Gpu** ppGpu)
+Result Instance::CreateGpu(const grfx::internal::GpuCreateInfo* pCreateInfo, AutoPtr<grfx::Gpu**> ppGpu)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppGpu);
@@ -225,7 +225,7 @@ void Instance::DestroyGpu(const grfx::Gpu* pGpu)
     DestroyObject(mGpus, pGpu);
 }
 
-Result CreateInstance(const grfx::InstanceCreateInfo* pCreateInfo, grfx::Instance** ppInstance)
+Result CreateInstance(const grfx::InstanceCreateInfo* pCreateInfo, AutoPtr<grfx::Instance**> ppInstance)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppInstance);

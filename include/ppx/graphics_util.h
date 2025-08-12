@@ -48,26 +48,26 @@ private:
     friend Result CreateImageFromBitmap(
         grfx::Queue*        pQueue,
         const Bitmap*       pBitmap,
-        grfx::Image**       ppImage,
+        AutoPtr<grfx::Image**>       ppImage,
         const ImageOptions& options);
 
     friend Result CreateImageFromCompressedImage(
         grfx::Queue*        pQueue,
         const gli::texture& image,
-        grfx::Image**       ppImage,
+        AutoPtr<grfx::Image**>       ppImage,
         const ImageOptions& options);
 
     friend Result CreateImageFromFile(
         grfx::Queue*                 pQueue,
         const std::filesystem::path& path,
-        grfx::Image**                ppImage,
+        AutoPtr<grfx::Image**>                ppImage,
         const ImageOptions&          options,
         bool                         useGpu);
 
     friend Result CreateImageFromBitmapGpu(
         grfx::Queue*        pQueue,
         const Bitmap*       pBitmap,
-        grfx::Image**       ppImage,
+        AutoPtr<grfx::Image**>       ppImage,
         const ImageOptions& options);
 };
 
@@ -89,7 +89,7 @@ Result CopyBitmapToImage(
 Result CreateImageFromBitmap(
     grfx::Queue*        pQueue,
     const Bitmap*       pBitmap,
-    grfx::Image**       ppImage,
+    AutoPtr<grfx::Image**>       ppImage,
     const ImageOptions& options = ImageOptions());
 
 //! @fn CreateImageFromFile
@@ -98,7 +98,7 @@ Result CreateImageFromBitmap(
 Result CreateImageFromFile(
     grfx::Queue*                 pQueue,
     const std::filesystem::path& path,
-    grfx::Image**                ppImage,
+    AutoPtr<grfx::Image**>                ppImage,
     const ImageOptions&          options = ImageOptions(),
     bool                         useGpu  = false);
 
@@ -108,7 +108,7 @@ Result CreateImageFromFile(
 Result CreateImageFromBitmapGpu(
     grfx::Queue*        pQueue,
     const Bitmap*       pBitmap,
-    grfx::Image**       ppImage,
+    AutoPtr<grfx::Image**>       ppImage,
     const ImageOptions& options = ImageOptions());
 
 // -------------------------------------------------------------------------------------------------
@@ -135,19 +135,19 @@ private:
     friend Result CreateTextureFromBitmap(
         grfx::Queue*          pQueue,
         const Bitmap*         pBitmap,
-        grfx::Texture**       ppTexture,
+        AutoPtr<grfx::Texture**>       ppTexture,
         const TextureOptions& options);
 
     friend Result CreateTextureFromMipmap(
         grfx::Queue*          pQueue,
         const Mipmap*         pMipmap,
-        grfx::Texture**       ppTexture,
+        AutoPtr<grfx::Texture**>       ppTexture,
         const TextureOptions& options);
 
     friend Result CreateTextureFromFile(
         grfx::Queue*                 pQueue,
         const std::filesystem::path& path,
-        grfx::Texture**              ppTexture,
+        AutoPtr<grfx::Texture**>              ppTexture,
         const TextureOptions&        options);
 };
 
@@ -169,7 +169,7 @@ Result CopyBitmapToTexture(
 Result CreateTextureFromBitmap(
     grfx::Queue*          pQueue,
     const Bitmap*         pBitmap,
-    grfx::Texture**       ppTexture,
+    AutoPtr<grfx::Texture**>       ppTexture,
     const TextureOptions& options = TextureOptions());
 
 //! @fn CreateTextureFromMipmap
@@ -179,7 +179,7 @@ Result CreateTextureFromBitmap(
 Result CreateTextureFromMipmap(
     grfx::Queue*          pQueue,
     const Mipmap*         pMipmap,
-    grfx::Texture**       ppTexture,
+    AutoPtr<grfx::Texture**>       ppTexture,
     const TextureOptions& options = TextureOptions());
 
 //! @fn CreateTextureFromFile
@@ -188,7 +188,7 @@ Result CreateTextureFromMipmap(
 Result CreateTextureFromFile(
     grfx::Queue*                 pQueue,
     const std::filesystem::path& path,
-    grfx::Texture**              ppTexture,
+    AutoPtr<grfx::Texture**>              ppTexture,
     const TextureOptions&        options = TextureOptions());
 
 // Create a 1x1 texture with the specified pixel data. The format
@@ -198,7 +198,7 @@ template <typename PixelDataType>
 Result CreateTexture1x1(
     grfx::Queue*                       pQueue,
     const std::array<PixelDataType, 4> color,
-    grfx::Texture**                    ppTexture,
+    AutoPtr<grfx::Texture**>                    ppTexture,
     const TextureOptions&              options = TextureOptions())
 {
     PPX_ASSERT_NULL_ARG(pQueue);
@@ -239,8 +239,8 @@ Result CreateTexture1x1(
 Result CreateIBLTexturesFromFile(
     grfx::Queue*                 pQueue,
     const std::filesystem::path& path,
-    grfx::Texture**              ppIrradianceTexture,
-    grfx::Texture**              ppEnvironmentTexture);
+    AutoPtr<grfx::Texture**>              ppIrradianceTexture,
+    AutoPtr<grfx::Texture**>              ppEnvironmentTexture);
 
 // -------------------------------------------------------------------------------------------------
 
@@ -400,7 +400,7 @@ Result CreateCubeMapFromFile(
     grfx::Queue*                 pQueue,
     const std::filesystem::path& path,
     const CubeMapCreateInfo*     pCreateInfo,
-    grfx::Image**                ppImage,
+    AutoPtr<grfx::Image**>                ppImage,
     const grfx::ImageUsageFlags& additionalImageUsage = grfx::ImageUsageFlags());
 
 // -------------------------------------------------------------------------------------------------
@@ -411,7 +411,7 @@ Result CreateCubeMapFromFile(
 Result CreateMeshFromGeometry(
     grfx::Queue*    pQueue,
     const Geometry* pGeometry,
-    grfx::Mesh**    ppMesh);
+    AutoPtr<grfx::Mesh**>    ppMesh);
 
 //! @fn CreateMeshFromTriMesh
 //!
@@ -419,7 +419,7 @@ Result CreateMeshFromGeometry(
 Result CreateMeshFromTriMesh(
     grfx::Queue*   pQueue,
     const TriMesh* pTriMesh,
-    grfx::Mesh**   ppMesh);
+    AutoPtr<grfx::Mesh**>   ppMesh);
 
 //! @fn CreateMeshFromWireMesh
 //!
@@ -427,7 +427,7 @@ Result CreateMeshFromTriMesh(
 Result CreateMeshFromWireMesh(
     grfx::Queue*    pQueue,
     const WireMesh* pWireMesh,
-    grfx::Mesh**    ppMesh);
+    AutoPtr<grfx::Mesh**>    ppMesh);
 
 //! @fn CreateModelFromFile
 //!
@@ -435,7 +435,7 @@ Result CreateMeshFromWireMesh(
 Result CreateMeshFromFile(
     grfx::Queue*                 pQueue,
     const std::filesystem::path& path,
-    grfx::Mesh**                 ppMesh,
+    AutoPtr<grfx::Mesh**>                 ppMesh,
     const TriMeshOptions&        options = TriMeshOptions());
 
 // -------------------------------------------------------------------------------------------------

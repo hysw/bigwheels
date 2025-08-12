@@ -359,7 +359,7 @@ bool Swapchain::IsHeadless() const
 #endif
 }
 
-Result Swapchain::GetColorImage(uint32_t imageIndex, grfx::Image** ppImage) const
+Result Swapchain::GetColorImage(uint32_t imageIndex, AutoPtr<grfx::Image**> ppImage) const
 {
     if (!IsIndexInRange(imageIndex, mColorImages)) {
         return ppx::ERROR_OUT_OF_RANGE;
@@ -368,7 +368,7 @@ Result Swapchain::GetColorImage(uint32_t imageIndex, grfx::Image** ppImage) cons
     return ppx::SUCCESS;
 }
 
-Result Swapchain::GetDepthImage(uint32_t imageIndex, grfx::Image** ppImage) const
+Result Swapchain::GetDepthImage(uint32_t imageIndex, AutoPtr<grfx::Image**> ppImage) const
 {
     if (!IsIndexInRange(imageIndex, mDepthImages)) {
         return ppx::ERROR_OUT_OF_RANGE;
@@ -377,7 +377,7 @@ Result Swapchain::GetDepthImage(uint32_t imageIndex, grfx::Image** ppImage) cons
     return ppx::SUCCESS;
 }
 
-Result Swapchain::GetRenderPass(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, grfx::RenderPass** ppRenderPass) const
+Result Swapchain::GetRenderPass(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, AutoPtr<grfx::RenderPass**> ppRenderPass) const
 {
     if (!IsIndexInRange(imageIndex, mClearRenderPasses)) {
         return ppx::ERROR_OUT_OF_RANGE;
@@ -391,7 +391,7 @@ Result Swapchain::GetRenderPass(uint32_t imageIndex, grfx::AttachmentLoadOp load
     return ppx::SUCCESS;
 }
 
-Result Swapchain::GetRenderTargetView(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, grfx::RenderTargetView** ppView) const
+Result Swapchain::GetRenderTargetView(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, AutoPtr<grfx::RenderTargetView**> ppView) const
 {
     if (!IsIndexInRange(imageIndex, mClearRenderTargets)) {
         return ppx::ERROR_OUT_OF_RANGE;
@@ -405,7 +405,7 @@ Result Swapchain::GetRenderTargetView(uint32_t imageIndex, grfx::AttachmentLoadO
     return ppx::SUCCESS;
 }
 
-Result Swapchain::GetDepthStencilView(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, grfx::DepthStencilView** ppView) const
+Result Swapchain::GetDepthStencilView(uint32_t imageIndex, grfx::AttachmentLoadOp loadOp, AutoPtr<grfx::DepthStencilView**> ppView) const
 {
     if (!IsIndexInRange(imageIndex, mClearDepthStencilViews)) {
         return ppx::ERROR_OUT_OF_RANGE;
@@ -497,7 +497,7 @@ Result Swapchain::AcquireNextImage(
 Result Swapchain::Present(
     uint32_t                      imageIndex,
     uint32_t                      waitSemaphoreCount,
-    const grfx::Semaphore* const* ppWaitSemaphores)
+    AutoPtr<const grfx::Semaphore* const*> ppWaitSemaphores)
 {
     if (IsHeadless()) {
         return PresentHeadless(imageIndex, waitSemaphoreCount, ppWaitSemaphores);
@@ -527,7 +527,7 @@ Result Swapchain::AcquireNextImageHeadless(uint64_t timeout, grfx::Semaphore* pS
     return ppx::SUCCESS;
 }
 
-Result Swapchain::PresentHeadless(uint32_t imageIndex, uint32_t waitSemaphoreCount, const grfx::Semaphore* const* ppWaitSemaphores)
+Result Swapchain::PresentHeadless(uint32_t imageIndex, uint32_t waitSemaphoreCount, AutoPtr<const grfx::Semaphore* const*> ppWaitSemaphores)
 {
     grfx::CommandBufferPtr commandBuffer = mHeadlessCommandBuffers[mCurrentImageIndex];
 

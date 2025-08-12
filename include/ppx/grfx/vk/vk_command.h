@@ -91,7 +91,7 @@ public:
     virtual void BindGraphicsDescriptorSets(
         const grfx::PipelineInterface*    pInterface,
         uint32_t                          setCount,
-        const grfx::DescriptorSet* const* ppSets) override;
+        AutoPtr<const grfx::DescriptorSet* const*> ppSets) override;
 
     virtual void PushGraphicsConstants(
         const grfx::PipelineInterface* pInterface,
@@ -104,7 +104,7 @@ public:
     virtual void BindComputeDescriptorSets(
         const grfx::PipelineInterface*    pInterface,
         uint32_t                          setCount,
-        const grfx::DescriptorSet* const* ppSets) override;
+        AutoPtr<const grfx::DescriptorSet* const*> ppSets) override;
 
     virtual void PushComputeConstants(
         const grfx::PipelineInterface* pInterface,
@@ -195,7 +195,7 @@ private:
         VkPipelineBindPoint               bindPoint,
         const grfx::PipelineInterface*    pInterface,
         uint32_t                          setCount,
-        const grfx::DescriptorSet* const* ppSets);
+        AutoPtr<const grfx::DescriptorSet* const*> ppSets);
 
     void PushConstants(
         const grfx::PipelineInterface* pInterface,

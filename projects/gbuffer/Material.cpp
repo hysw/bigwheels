@@ -54,7 +54,7 @@ Material Material::sTiles;
 
 static std::map<std::string, grfx::TexturePtr> mTextureCache;
 
-static Result LoadTexture(grfx::Queue* pQueue, const std::filesystem::path& path, grfx::Texture** ppTexture)
+static Result LoadTexture(grfx::Queue* pQueue, const std::filesystem::path& path, AutoPtr<grfx::Texture**> ppTexture)
 {
     if (!ppx::fs::path_exists(path)) {
         return ppx::ERROR_PATH_DOES_NOT_EXIST;

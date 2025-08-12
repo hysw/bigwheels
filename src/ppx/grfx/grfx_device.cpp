@@ -99,7 +99,7 @@ template <
     typename ObjectT,
     typename CreateInfoT,
     typename ContainerT>
-Result Device::CreateObject(const CreateInfoT* pCreateInfo, ContainerT& container, ObjectT** ppObject)
+Result Device::CreateObject(const CreateInfoT* pCreateInfo, ContainerT& container, AutoPtr<ObjectT**> ppObject)
 {
     // Allocate object
     ObjectT* pObject = nullptr;
@@ -168,7 +168,7 @@ void Device::DestroyAllObjects(std::vector<ObjPtr<ObjectT>>& container)
     container.clear();
 }
 
-Result Device::AllocateObject(grfx::DrawPass** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::DrawPass**> ppObject)
 {
     grfx::DrawPass* pObject = new grfx::DrawPass();
     if (IsNull(pObject)) {
@@ -178,7 +178,7 @@ Result Device::AllocateObject(grfx::DrawPass** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::FullscreenQuad** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::FullscreenQuad**> ppObject)
 {
     grfx::FullscreenQuad* pObject = new grfx::FullscreenQuad();
     if (IsNull(pObject)) {
@@ -188,7 +188,7 @@ Result Device::AllocateObject(grfx::FullscreenQuad** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::Mesh** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::Mesh**> ppObject)
 {
     grfx::Mesh* pObject = new grfx::Mesh();
     if (IsNull(pObject)) {
@@ -198,7 +198,7 @@ Result Device::AllocateObject(grfx::Mesh** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::TextDraw** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::TextDraw**> ppObject)
 {
     grfx::TextDraw* pObject = new grfx::TextDraw();
     if (IsNull(pObject)) {
@@ -208,7 +208,7 @@ Result Device::AllocateObject(grfx::TextDraw** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::Texture** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::Texture**> ppObject)
 {
     grfx::Texture* pObject = new grfx::Texture();
     if (IsNull(pObject)) {
@@ -218,7 +218,7 @@ Result Device::AllocateObject(grfx::Texture** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::TextureFont** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::TextureFont**> ppObject)
 {
     grfx::TextureFont* pObject = new grfx::TextureFont();
     if (IsNull(pObject)) {
@@ -228,7 +228,7 @@ Result Device::AllocateObject(grfx::TextureFont** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::CreateBuffer(const grfx::BufferCreateInfo* pCreateInfo, grfx::Buffer** ppBuffer)
+Result Device::CreateBuffer(const grfx::BufferCreateInfo* pCreateInfo, AutoPtr<grfx::Buffer**> ppBuffer)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppBuffer);
@@ -241,7 +241,7 @@ void Device::DestroyBuffer(const grfx::Buffer* pBuffer)
     DestroyObject(mBuffers, pBuffer);
 }
 
-Result Device::CreateCommandPool(const grfx::CommandPoolCreateInfo* pCreateInfo, grfx::CommandPool** ppCommandPool)
+Result Device::CreateCommandPool(const grfx::CommandPoolCreateInfo* pCreateInfo, AutoPtr<grfx::CommandPool**> ppCommandPool)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppCommandPool);
@@ -254,7 +254,7 @@ void Device::DestroyCommandPool(const grfx::CommandPool* pCommandPool)
     DestroyObject(mCommandPools, pCommandPool);
 }
 
-Result Device::CreateComputePipeline(const grfx::ComputePipelineCreateInfo* pCreateInfo, grfx::ComputePipeline** ppComputePipeline)
+Result Device::CreateComputePipeline(const grfx::ComputePipelineCreateInfo* pCreateInfo, AutoPtr<grfx::ComputePipeline**> ppComputePipeline)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppComputePipeline);
@@ -267,7 +267,7 @@ void Device::DestroyComputePipeline(const grfx::ComputePipeline* pComputePipelin
     DestroyObject(mComputePipelines, pComputePipeline);
 }
 
-Result Device::CreateDepthStencilView(const grfx::DepthStencilViewCreateInfo* pCreateInfo, grfx::DepthStencilView** ppDepthStencilView)
+Result Device::CreateDepthStencilView(const grfx::DepthStencilViewCreateInfo* pCreateInfo, AutoPtr<grfx::DepthStencilView**> ppDepthStencilView)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppDepthStencilView);
@@ -280,7 +280,7 @@ void Device::DestroyDepthStencilView(const grfx::DepthStencilView* pDepthStencil
     DestroyObject(mDepthStencilViews, pDepthStencilView);
 }
 
-Result Device::CreateDescriptorPool(const grfx::DescriptorPoolCreateInfo* pCreateInfo, grfx::DescriptorPool** ppDescriptorPool)
+Result Device::CreateDescriptorPool(const grfx::DescriptorPoolCreateInfo* pCreateInfo, AutoPtr<grfx::DescriptorPool**> ppDescriptorPool)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppDescriptorPool);
@@ -293,7 +293,7 @@ void Device::DestroyDescriptorPool(const grfx::DescriptorPool* pDescriptorPool)
     DestroyObject(mDescriptorPools, pDescriptorPool);
 }
 
-Result Device::CreateDescriptorSetLayout(const grfx::DescriptorSetLayoutCreateInfo* pCreateInfo, grfx::DescriptorSetLayout** ppDescriptorSetLayout)
+Result Device::CreateDescriptorSetLayout(const grfx::DescriptorSetLayoutCreateInfo* pCreateInfo, AutoPtr<grfx::DescriptorSetLayout**> ppDescriptorSetLayout)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppDescriptorSetLayout);
@@ -306,7 +306,7 @@ void Device::DestroyDescriptorSetLayout(const grfx::DescriptorSetLayout* pDescri
     DestroyObject(mDescriptorSetLayouts, pDescriptorSetLayout);
 }
 
-Result Device::CreateDrawPass(const grfx::DrawPassCreateInfo* pCreateInfo, grfx::DrawPass** ppDrawPass)
+Result Device::CreateDrawPass(const grfx::DrawPassCreateInfo* pCreateInfo, AutoPtr<grfx::DrawPass**> ppDrawPass)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppDrawPass);
@@ -316,7 +316,7 @@ Result Device::CreateDrawPass(const grfx::DrawPassCreateInfo* pCreateInfo, grfx:
     return CreateObject(&createInfo, mDrawPasses, ppDrawPass);
 }
 
-Result Device::CreateDrawPass(const grfx::DrawPassCreateInfo2* pCreateInfo, grfx::DrawPass** ppDrawPass)
+Result Device::CreateDrawPass(const grfx::DrawPassCreateInfo2* pCreateInfo, AutoPtr<grfx::DrawPass**> ppDrawPass)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppDrawPass);
@@ -326,7 +326,7 @@ Result Device::CreateDrawPass(const grfx::DrawPassCreateInfo2* pCreateInfo, grfx
     return CreateObject(&createInfo, mDrawPasses, ppDrawPass);
 }
 
-Result Device::CreateDrawPass(const grfx::DrawPassCreateInfo3* pCreateInfo, grfx::DrawPass** ppDrawPass)
+Result Device::CreateDrawPass(const grfx::DrawPassCreateInfo3* pCreateInfo, AutoPtr<grfx::DrawPass**> ppDrawPass)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppDrawPass);
@@ -342,7 +342,7 @@ void Device::DestroyDrawPass(const grfx::DrawPass* pDrawPass)
     DestroyObject(mDrawPasses, pDrawPass);
 }
 
-Result Device::CreateFence(const grfx::FenceCreateInfo* pCreateInfo, grfx::Fence** ppFence)
+Result Device::CreateFence(const grfx::FenceCreateInfo* pCreateInfo, AutoPtr<grfx::Fence**> ppFence)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppFence);
@@ -355,7 +355,7 @@ void Device::DestroyFence(const grfx::Fence* pFence)
     DestroyObject(mFences, pFence);
 }
 
-Result Device::CreateShadingRatePattern(const grfx::ShadingRatePatternCreateInfo* pCreateInfo, grfx::ShadingRatePattern** ppShadingRatePattern)
+Result Device::CreateShadingRatePattern(const grfx::ShadingRatePatternCreateInfo* pCreateInfo, AutoPtr<grfx::ShadingRatePattern**> ppShadingRatePattern)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppShadingRatePattern);
@@ -368,7 +368,7 @@ void Device::DestroyShadingRatePattern(const grfx::ShadingRatePattern* pShadingR
     DestroyObject(mShadingRatePatterns, pShadingRatePattern);
 }
 
-Result Device::CreateFullscreenQuad(const grfx::FullscreenQuadCreateInfo* pCreateInfo, grfx::FullscreenQuad** ppFullscreenQuad)
+Result Device::CreateFullscreenQuad(const grfx::FullscreenQuadCreateInfo* pCreateInfo, AutoPtr<grfx::FullscreenQuad**> ppFullscreenQuad)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppFullscreenQuad);
@@ -381,14 +381,14 @@ void Device::DestroyFullscreenQuad(const grfx::FullscreenQuad* pFullscreenQuad)
     DestroyObject(mFullscreenQuads, pFullscreenQuad);
 }
 
-Result Device::CreateGraphicsPipeline(const grfx::GraphicsPipelineCreateInfo* pCreateInfo, grfx::GraphicsPipeline** ppGraphicsPipeline)
+Result Device::CreateGraphicsPipeline(const grfx::GraphicsPipelineCreateInfo* pCreateInfo, AutoPtr<grfx::GraphicsPipeline**> ppGraphicsPipeline)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppGraphicsPipeline);
     return CreateObject(pCreateInfo, mGraphicsPipelines, ppGraphicsPipeline);
 }
 
-Result Device::CreateGraphicsPipeline(const grfx::GraphicsPipelineCreateInfo2* pCreateInfo, grfx::GraphicsPipeline** ppGraphicsPipeline)
+Result Device::CreateGraphicsPipeline(const grfx::GraphicsPipelineCreateInfo2* pCreateInfo, AutoPtr<grfx::GraphicsPipeline**> ppGraphicsPipeline)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppGraphicsPipeline);
@@ -405,7 +405,7 @@ void Device::DestroyGraphicsPipeline(const grfx::GraphicsPipeline* pGraphicsPipe
     DestroyObject(mGraphicsPipelines, pGraphicsPipeline);
 }
 
-Result Device::CreateImage(const grfx::ImageCreateInfo* pCreateInfo, grfx::Image** ppImage)
+Result Device::CreateImage(const grfx::ImageCreateInfo* pCreateInfo, AutoPtr<grfx::Image**> ppImage)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppImage);
@@ -418,7 +418,7 @@ void Device::DestroyImage(const grfx::Image* pImage)
     DestroyObject(mImages, pImage);
 }
 
-Result Device::CreateMesh(const grfx::MeshCreateInfo* pCreateInfo, grfx::Mesh** ppMesh)
+Result Device::CreateMesh(const grfx::MeshCreateInfo* pCreateInfo, AutoPtr<grfx::Mesh**> ppMesh)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppMesh);
@@ -431,7 +431,7 @@ void Device::DestroyMesh(const grfx::Mesh* pMesh)
     DestroyObject(mMeshes, pMesh);
 }
 
-Result Device::CreatePipelineInterface(const grfx::PipelineInterfaceCreateInfo* pCreateInfo, grfx::PipelineInterface** ppPipelineInterface)
+Result Device::CreatePipelineInterface(const grfx::PipelineInterfaceCreateInfo* pCreateInfo, AutoPtr<grfx::PipelineInterface**> ppPipelineInterface)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppPipelineInterface);
@@ -444,7 +444,7 @@ void Device::DestroyPipelineInterface(const grfx::PipelineInterface* pPipelineIn
     DestroyObject(mPipelineInterfaces, pPipelineInterface);
 }
 
-Result Device::CreateQuery(const grfx::QueryCreateInfo* pCreateInfo, grfx::Query** ppQuery)
+Result Device::CreateQuery(const grfx::QueryCreateInfo* pCreateInfo, AutoPtr<grfx::Query**> ppQuery)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppQuery);
@@ -457,7 +457,7 @@ void Device::DestroyQuery(const grfx::Query* pQuery)
     DestroyObject(mQuerys, pQuery);
 }
 
-Result Device::CreateRenderPass(const grfx::RenderPassCreateInfo* pCreateInfo, grfx::RenderPass** ppRenderPass)
+Result Device::CreateRenderPass(const grfx::RenderPassCreateInfo* pCreateInfo, AutoPtr<grfx::RenderPass**> ppRenderPass)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppRenderPass);
@@ -467,7 +467,7 @@ Result Device::CreateRenderPass(const grfx::RenderPassCreateInfo* pCreateInfo, g
     return CreateObject(&createInfo, mRenderPasses, ppRenderPass);
 }
 
-Result Device::CreateRenderPass(const grfx::RenderPassCreateInfo2* pCreateInfo, grfx::RenderPass** ppRenderPass)
+Result Device::CreateRenderPass(const grfx::RenderPassCreateInfo2* pCreateInfo, AutoPtr<grfx::RenderPass**> ppRenderPass)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppRenderPass);
@@ -477,7 +477,7 @@ Result Device::CreateRenderPass(const grfx::RenderPassCreateInfo2* pCreateInfo, 
     return CreateObject(&createInfo, mRenderPasses, ppRenderPass);
 }
 
-Result Device::CreateRenderPass(const grfx::RenderPassCreateInfo3* pCreateInfo, grfx::RenderPass** ppRenderPass)
+Result Device::CreateRenderPass(const grfx::RenderPassCreateInfo3* pCreateInfo, AutoPtr<grfx::RenderPass**> ppRenderPass)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppRenderPass);
@@ -493,7 +493,7 @@ void Device::DestroyRenderPass(const grfx::RenderPass* pRenderPass)
     DestroyObject(mRenderPasses, pRenderPass);
 }
 
-Result Device::CreateRenderTargetView(const grfx::RenderTargetViewCreateInfo* pCreateInfo, grfx::RenderTargetView** ppRenderTargetView)
+Result Device::CreateRenderTargetView(const grfx::RenderTargetViewCreateInfo* pCreateInfo, AutoPtr<grfx::RenderTargetView**> ppRenderTargetView)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppRenderTargetView);
@@ -506,7 +506,7 @@ void Device::DestroyRenderTargetView(const grfx::RenderTargetView* pRenderTarget
     DestroyObject(mRenderTargetViews, pRenderTargetView);
 }
 
-Result Device::CreateSampledImageView(const grfx::SampledImageViewCreateInfo* pCreateInfo, grfx::SampledImageView** ppSampledImageView)
+Result Device::CreateSampledImageView(const grfx::SampledImageViewCreateInfo* pCreateInfo, AutoPtr<grfx::SampledImageView**> ppSampledImageView)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppSampledImageView);
@@ -519,7 +519,7 @@ void Device::DestroySampledImageView(const grfx::SampledImageView* pSampledImage
     DestroyObject(mSampledImageViews, pSampledImageView);
 }
 
-Result Device::CreateSampler(const grfx::SamplerCreateInfo* pCreateInfo, grfx::Sampler** ppSampler)
+Result Device::CreateSampler(const grfx::SamplerCreateInfo* pCreateInfo, AutoPtr<grfx::Sampler**> ppSampler)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppSampler);
@@ -532,7 +532,7 @@ void Device::DestroySampler(const grfx::Sampler* pSampler)
     DestroyObject(mSamplers, pSampler);
 }
 
-Result Device::CreateSamplerYcbcrConversion(const grfx::SamplerYcbcrConversionCreateInfo* pCreateInfo, grfx::SamplerYcbcrConversion** ppConversion)
+Result Device::CreateSamplerYcbcrConversion(const grfx::SamplerYcbcrConversionCreateInfo* pCreateInfo, AutoPtr<grfx::SamplerYcbcrConversion**> ppConversion)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppConversion);
@@ -545,7 +545,7 @@ void Device::DestroySamplerYcbcrConversion(const grfx::SamplerYcbcrConversion* p
     DestroyObject(mSamplerYcbcrConversions, pConversion);
 }
 
-Result Device::CreateSemaphore(const grfx::SemaphoreCreateInfo* pCreateInfo, grfx::Semaphore** ppSemaphore)
+Result Device::CreateSemaphore(const grfx::SemaphoreCreateInfo* pCreateInfo, AutoPtr<grfx::Semaphore**> ppSemaphore)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppSemaphore);
@@ -558,7 +558,7 @@ void Device::DestroySemaphore(const grfx::Semaphore* pSemaphore)
     DestroyObject(mSemaphores, pSemaphore);
 }
 
-Result Device::CreateShaderModule(const grfx::ShaderModuleCreateInfo* pCreateInfo, grfx::ShaderModule** ppShaderModule)
+Result Device::CreateShaderModule(const grfx::ShaderModuleCreateInfo* pCreateInfo, AutoPtr<grfx::ShaderModule**> ppShaderModule)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppShaderModule);
@@ -571,7 +571,7 @@ void Device::DestroyShaderModule(const grfx::ShaderModule* pShaderModule)
     DestroyObject(mShaderModules, pShaderModule);
 }
 
-Result Device::CreateStorageImageView(const grfx::StorageImageViewCreateInfo* pCreateInfo, grfx::StorageImageView** ppStorageImageView)
+Result Device::CreateStorageImageView(const grfx::StorageImageViewCreateInfo* pCreateInfo, AutoPtr<grfx::StorageImageView**> ppStorageImageView)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppStorageImageView);
@@ -584,7 +584,7 @@ void Device::DestroyStorageImageView(const grfx::StorageImageView* pStorageImage
     DestroyObject(mStorageImageViews, pStorageImageView);
 }
 
-Result Device::CreateSwapchain(const grfx::SwapchainCreateInfo* pCreateInfo, grfx::Swapchain** ppSwapchain)
+Result Device::CreateSwapchain(const grfx::SwapchainCreateInfo* pCreateInfo, AutoPtr<grfx::Swapchain**> ppSwapchain)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppSwapchain);
@@ -597,7 +597,7 @@ void Device::DestroySwapchain(const grfx::Swapchain* pSwapchain)
     DestroyObject(mSwapchains, pSwapchain);
 }
 
-Result Device::CreateTextDraw(const grfx::TextDrawCreateInfo* pCreateInfo, grfx::TextDraw** ppTextDraw)
+Result Device::CreateTextDraw(const grfx::TextDrawCreateInfo* pCreateInfo, AutoPtr<grfx::TextDraw**> ppTextDraw)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppTextDraw);
@@ -610,7 +610,7 @@ void Device::DestroyTextDraw(const grfx::TextDraw* pTextDraw)
     DestroyObject(mTextDraws, pTextDraw);
 }
 
-Result Device::CreateTexture(const grfx::TextureCreateInfo* pCreateInfo, grfx::Texture** ppTexture)
+Result Device::CreateTexture(const grfx::TextureCreateInfo* pCreateInfo, AutoPtr<grfx::Texture**> ppTexture)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppTexture);
@@ -623,7 +623,7 @@ void Device::DestroyTexture(const grfx::Texture* pTexture)
     DestroyObject(mTextures, pTexture);
 }
 
-Result Device::CreateTextureFont(const grfx::TextureFontCreateInfo* pCreateInfo, grfx::TextureFont** ppTextureFont)
+Result Device::CreateTextureFont(const grfx::TextureFontCreateInfo* pCreateInfo, AutoPtr<grfx::TextureFont**> ppTextureFont)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppTextureFont);
@@ -638,7 +638,7 @@ void Device::DestroyTextureFont(const grfx::TextureFont* pTextureFont)
 
 Result Device::AllocateCommandBuffer(
     const grfx::CommandPool* pPool,
-    grfx::CommandBuffer**    ppCommandBuffer,
+    AutoPtr<grfx::CommandBuffer**>    ppCommandBuffer,
     uint32_t                 resourceDescriptorCount,
     uint32_t                 samplerDescriptorCount)
 {
@@ -658,7 +658,7 @@ void Device::FreeCommandBuffer(const grfx::CommandBuffer* pCommandBuffer)
     DestroyObject(mCommandBuffers, pCommandBuffer);
 }
 
-Result Device::AllocateDescriptorSet(grfx::DescriptorPool* pPool, const grfx::DescriptorSetLayout* pLayout, grfx::DescriptorSet** ppSet)
+Result Device::AllocateDescriptorSet(grfx::DescriptorPool* pPool, const grfx::DescriptorSetLayout* pLayout, AutoPtr<grfx::DescriptorSet**> ppSet)
 {
     PPX_ASSERT_NULL_ARG(pPool);
     PPX_ASSERT_NULL_ARG(pLayout);
@@ -682,21 +682,21 @@ void Device::FreeDescriptorSet(const grfx::DescriptorSet* pSet)
     DestroyObject(mDescriptorSets, pSet);
 }
 
-Result Device::CreateGraphicsQueue(const grfx::internal::QueueCreateInfo* pCreateInfo, grfx::Queue** ppQueue)
+Result Device::CreateGraphicsQueue(const grfx::internal::QueueCreateInfo* pCreateInfo, AutoPtr<grfx::Queue**> ppQueue)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppQueue);
     return CreateObject(pCreateInfo, mGraphicsQueues, ppQueue);
 }
 
-Result Device::CreateComputeQueue(const grfx::internal::QueueCreateInfo* pCreateInfo, grfx::Queue** ppQueue)
+Result Device::CreateComputeQueue(const grfx::internal::QueueCreateInfo* pCreateInfo, AutoPtr<grfx::Queue**> ppQueue)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppQueue);
     return CreateObject(pCreateInfo, mComputeQueues, ppQueue);
 }
 
-Result Device::CreateTransferQueue(const grfx::internal::QueueCreateInfo* pCreateInfo, grfx::Queue** ppQueue)
+Result Device::CreateTransferQueue(const grfx::internal::QueueCreateInfo* pCreateInfo, AutoPtr<grfx::Queue**> ppQueue)
 {
     PPX_ASSERT_NULL_ARG(pCreateInfo);
     PPX_ASSERT_NULL_ARG(ppQueue);
@@ -709,7 +709,7 @@ uint32_t Device::GetGraphicsQueueCount() const
     return count;
 }
 
-Result Device::GetGraphicsQueue(uint32_t index, grfx::Queue** ppQueue) const
+Result Device::GetGraphicsQueue(uint32_t index, AutoPtr<grfx::Queue**> ppQueue) const
 {
     if (!IsIndexInRange(index, mGraphicsQueues)) {
         return ppx::ERROR_OUT_OF_RANGE;
@@ -734,7 +734,7 @@ uint32_t Device::GetComputeQueueCount() const
     return count;
 }
 
-Result Device::GetComputeQueue(uint32_t index, grfx::Queue** ppQueue) const
+Result Device::GetComputeQueue(uint32_t index, AutoPtr<grfx::Queue**> ppQueue) const
 {
     if (!IsIndexInRange(index, mComputeQueues)) {
         return ppx::ERROR_OUT_OF_RANGE;
@@ -759,7 +759,7 @@ uint32_t Device::GetTransferQueueCount() const
     return count;
 }
 
-Result Device::GetTransferQueue(uint32_t index, grfx::Queue** ppQueue) const
+Result Device::GetTransferQueue(uint32_t index, AutoPtr<grfx::Queue**> ppQueue) const
 {
     if (!IsIndexInRange(index, mTransferQueues)) {
         return ppx::ERROR_OUT_OF_RANGE;

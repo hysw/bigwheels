@@ -24,12 +24,12 @@ namespace grfx {
 struct SubmitInfo
 {
     uint32_t                          commandBufferCount   = 0;
-    const grfx::CommandBuffer* const* ppCommandBuffers     = nullptr;
+    AutoPtr<const grfx::CommandBuffer* const*> ppCommandBuffers     = nullptr;
     uint32_t                          waitSemaphoreCount   = 0;
-    const grfx::Semaphore* const*     ppWaitSemaphores     = nullptr;
+    AutoPtr<const grfx::Semaphore* const*>     ppWaitSemaphores     = nullptr;
     std::vector<uint64_t>             waitValues           = {}; // Use 0 if index is binary semaphore
     uint32_t                          signalSemaphoreCount = 0;
-    grfx::Semaphore**                 ppSignalSemaphores   = nullptr;
+    AutoPtr<grfx::Semaphore**>                 ppSignalSemaphores   = nullptr;
     std::vector<uint64_t>             signalValues         = {}; // Use 0 if index is binary smeaphore
     grfx::Fence*                      pFence               = nullptr;
 };
@@ -73,7 +73,7 @@ public:
     virtual Result GetTimestampFrequency(uint64_t* pFrequency) const = 0;
 
     Result CreateCommandBuffer(
-        grfx::CommandBuffer** ppCommandBuffer,
+        AutoPtr<grfx::CommandBuffer**> ppCommandBuffer,
         uint32_t              resourceDescriptorCount = PPX_DEFAULT_RESOURCE_DESCRIPTOR_COUNT,
         uint32_t              samplerDescriptorCount  = PPX_DEFAULT_SAMPLE_DESCRIPTOR_COUNT);
     void DestroyCommandBuffer(const grfx::CommandBuffer* pCommandBuffer);

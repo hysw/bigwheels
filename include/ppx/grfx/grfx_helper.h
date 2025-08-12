@@ -479,7 +479,7 @@ public:
     void                  SetStride(uint32_t stride);
     grfx::VertexInputRate GetInputRate() const { return mInputRate; }
     uint32_t              GetAttributeCount() const { return static_cast<uint32_t>(mAttributes.size()); }
-    Result                GetAttribute(uint32_t index, const grfx::VertexAttribute** ppAttribute) const;
+    Result                GetAttribute(uint32_t index, AutoPtr<const grfx::VertexAttribute**> ppAttribute) const;
     uint32_t              GetAttributeIndex(grfx::VertexSemantic semantic) const;
     VertexBinding&        AppendAttribute(const grfx::VertexAttribute& attribute);
 
@@ -501,7 +501,7 @@ public:
     ~VertexDescription() {}
 
     uint32_t                   GetBindingCount() const { return CountU32(mBindings); }
-    Result                     GetBinding(uint32_t index, const grfx::VertexBinding** ppBinding) const;
+    Result                     GetBinding(uint32_t index, AutoPtr<const grfx::VertexBinding**> ppBinding) const;
     const grfx::VertexBinding* GetBinding(uint32_t index) const;
     uint32_t                   GetBindingIndex(uint32_t binding) const;
     Result                     AppendBinding(const grfx::VertexBinding& binding);

@@ -15,6 +15,8 @@
 #ifndef obj_ptr_h
 #define obj_ptr_h
 
+#include <type_traits>
+
 //! @class ObjPtrRefBase
 //!
 //!
@@ -84,7 +86,6 @@ private:
 //!
 template <typename ObjectT>
 class ObjPtr
-    : public ObjPtrBase
 {
 public:
     using object_type = ObjectT;
@@ -151,13 +152,54 @@ public:
         return mPtr;
     }
 
-    ObjPtrRef<ObjectT> operator&()
+    ObjectT** Addr() &
     {
-        return ObjPtrRef<ObjectT>(&mPtr);
+        return &mPtr;
+    }
+
+    ObjectT* const* Addr() const&
+    {
+        return &mPtr;
     }
 
 private:
     ObjectT* mPtr = nullptr;
 };
+
+template <typename, typename = void>
+class AutoPtr;
+
+template <typename T>
+class AutoPtr<T, std::enable_if_t<std::is_pointer_v<T> && std::is_pointer_v<std::remove_pointer_t<T>>>>
+{
+public:
+    AutoPtr(decltype(nullptr)) : mPtr(nullptr) {}
+    AutoPtr(T ptr) : mPtr(ptr) {}
+    template <typename U>
+    AutoPtr(const AutoPtr<U>& other) : mPtr(other.Get()) {}
+    template <typename U>
+    AutoPtr(ObjPtr<U>* ptr) : mPtr(ptr ? ptr->Addr() : nullptr) {
+        static_assert(sizeof(ObjPtr<U>) == sizeof(U*));
+    }
+    template <typename U>
+    AutoPtr(const ObjPtr<U>* ptr) : mPtr(ptr ? ptr->Addr() : nullptr) {
+        static_assert(sizeof(ObjPtr<U>) == sizeof(U*));
+    }
+    operator T() const { return mPtr; }
+    T Get() const { return mPtr; }
+
+private:
+    T mPtr = nullptr;
+};
+
+namespace ppx {
+
+template <typename T>
+bool IsNull(AutoPtr<T> p)
+{
+    return p == nullptr;
+}
+
+} // namespace ppx
 
 #endif // obj_ptr_h

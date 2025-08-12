@@ -834,7 +834,7 @@ void Device::DestroyApiObjects()
     }
 }
 
-Result Device::AllocateObject(grfx::Buffer** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::Buffer**> ppObject)
 {
     vk::Buffer* pObject = new vk::Buffer();
     if (IsNull(pObject)) {
@@ -844,7 +844,7 @@ Result Device::AllocateObject(grfx::Buffer** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::CommandBuffer** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::CommandBuffer**> ppObject)
 {
     vk::CommandBuffer* pObject = new vk::CommandBuffer();
     if (IsNull(pObject)) {
@@ -854,7 +854,7 @@ Result Device::AllocateObject(grfx::CommandBuffer** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::CommandPool** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::CommandPool**> ppObject)
 {
     vk::CommandPool* pObject = new vk::CommandPool();
     if (IsNull(pObject)) {
@@ -864,7 +864,7 @@ Result Device::AllocateObject(grfx::CommandPool** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::ComputePipeline** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::ComputePipeline**> ppObject)
 {
     vk::ComputePipeline* pObject = new vk::ComputePipeline();
     if (IsNull(pObject)) {
@@ -874,7 +874,7 @@ Result Device::AllocateObject(grfx::ComputePipeline** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::DepthStencilView** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::DepthStencilView**> ppObject)
 {
     vk::DepthStencilView* pObject = new vk::DepthStencilView();
     if (IsNull(pObject)) {
@@ -884,7 +884,7 @@ Result Device::AllocateObject(grfx::DepthStencilView** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::DescriptorPool** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::DescriptorPool**> ppObject)
 {
     vk::DescriptorPool* pObject = new vk::DescriptorPool();
     if (IsNull(pObject)) {
@@ -894,7 +894,7 @@ Result Device::AllocateObject(grfx::DescriptorPool** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::DescriptorSet** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::DescriptorSet**> ppObject)
 {
     vk::DescriptorSet* pObject = new vk::DescriptorSet();
     if (IsNull(pObject)) {
@@ -904,7 +904,7 @@ Result Device::AllocateObject(grfx::DescriptorSet** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::DescriptorSetLayout** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::DescriptorSetLayout**> ppObject)
 {
     vk::DescriptorSetLayout* pObject = new vk::DescriptorSetLayout();
     if (IsNull(pObject)) {
@@ -914,7 +914,7 @@ Result Device::AllocateObject(grfx::DescriptorSetLayout** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::Fence** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::Fence**> ppObject)
 {
     vk::Fence* pObject = new vk::Fence();
     if (IsNull(pObject)) {
@@ -924,7 +924,7 @@ Result Device::AllocateObject(grfx::Fence** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::GraphicsPipeline** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::GraphicsPipeline**> ppObject)
 {
     vk::GraphicsPipeline* pObject = new vk::GraphicsPipeline();
     if (IsNull(pObject)) {
@@ -934,7 +934,7 @@ Result Device::AllocateObject(grfx::GraphicsPipeline** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::Image** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::Image**> ppObject)
 {
     vk::Image* pObject = new vk::Image();
     if (IsNull(pObject)) {
@@ -944,7 +944,7 @@ Result Device::AllocateObject(grfx::Image** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::PipelineInterface** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::PipelineInterface**> ppObject)
 {
     vk::PipelineInterface* pObject = new vk::PipelineInterface();
     if (IsNull(pObject)) {
@@ -954,7 +954,7 @@ Result Device::AllocateObject(grfx::PipelineInterface** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::Queue** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::Queue**> ppObject)
 {
     vk::Queue* pObject = new vk::Queue();
     if (IsNull(pObject)) {
@@ -964,7 +964,7 @@ Result Device::AllocateObject(grfx::Queue** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::Query** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::Query**> ppObject)
 {
     vk::Query* pObject = new vk::Query();
     if (IsNull(pObject)) {
@@ -974,7 +974,7 @@ Result Device::AllocateObject(grfx::Query** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::RenderPass** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::RenderPass**> ppObject)
 {
     vk::RenderPass* pObject = new vk::RenderPass();
     if (IsNull(pObject)) {
@@ -984,7 +984,7 @@ Result Device::AllocateObject(grfx::RenderPass** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::RenderTargetView** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::RenderTargetView**> ppObject)
 {
     vk::RenderTargetView* pObject = new vk::RenderTargetView();
     if (IsNull(pObject)) {
@@ -994,7 +994,7 @@ Result Device::AllocateObject(grfx::RenderTargetView** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::SampledImageView** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::SampledImageView**> ppObject)
 {
     vk::SampledImageView* pObject = new vk::SampledImageView();
     if (IsNull(pObject)) {
@@ -1004,7 +1004,7 @@ Result Device::AllocateObject(grfx::SampledImageView** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::Sampler** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::Sampler**> ppObject)
 {
     vk::Sampler* pObject = new vk::Sampler();
     if (IsNull(pObject)) {
@@ -1014,7 +1014,7 @@ Result Device::AllocateObject(grfx::Sampler** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::SamplerYcbcrConversion** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::SamplerYcbcrConversion**> ppObject)
 {
     vk::SamplerYcbcrConversion* pObject = new vk::SamplerYcbcrConversion();
     if (IsNull(pObject)) {
@@ -1024,7 +1024,7 @@ Result Device::AllocateObject(grfx::SamplerYcbcrConversion** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::Semaphore** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::Semaphore**> ppObject)
 {
     vk::Semaphore* pObject = new vk::Semaphore();
     if (IsNull(pObject)) {
@@ -1034,7 +1034,7 @@ Result Device::AllocateObject(grfx::Semaphore** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::ShaderModule** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::ShaderModule**> ppObject)
 {
     vk::ShaderModule* pObject = new vk::ShaderModule();
     if (IsNull(pObject)) {
@@ -1044,12 +1044,12 @@ Result Device::AllocateObject(grfx::ShaderModule** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::ShaderProgram** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::ShaderProgram**> ppObject)
 {
     return ppx::ERROR_ALLOCATION_FAILED;
 }
 
-Result Device::AllocateObject(grfx::ShadingRatePattern** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::ShadingRatePattern**> ppObject)
 {
     vk::ShadingRatePattern* pObject = new vk::ShadingRatePattern();
     if (IsNull(pObject)) {
@@ -1059,7 +1059,7 @@ Result Device::AllocateObject(grfx::ShadingRatePattern** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::StorageImageView** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::StorageImageView**> ppObject)
 {
     vk::StorageImageView* pObject = new vk::StorageImageView();
     if (IsNull(pObject)) {
@@ -1069,7 +1069,7 @@ Result Device::AllocateObject(grfx::StorageImageView** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::Swapchain** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::Swapchain**> ppObject)
 {
     vk::Swapchain* pObject = new vk::Swapchain();
     if (IsNull(pObject)) {

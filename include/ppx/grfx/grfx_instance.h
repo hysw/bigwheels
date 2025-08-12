@@ -68,18 +68,18 @@ public:
     {
         return CountU32(mGpus);
     }
-    Result GetGpu(uint32_t index, grfx::Gpu** ppGpu) const;
+    Result GetGpu(uint32_t index, AutoPtr<grfx::Gpu**> ppGpu) const;
 
     uint32_t GetDeviceCount() const
     {
         return CountU32(mDevices);
     }
-    Result GetDevice(uint32_t index, grfx::Device** ppDevice) const;
+    Result GetDevice(uint32_t index, AutoPtr<grfx::Device**> ppDevice) const;
 
-    Result CreateDevice(const grfx::DeviceCreateInfo* pCreateInfo, grfx::Device** ppDevice);
+    Result CreateDevice(const grfx::DeviceCreateInfo* pCreateInfo, AutoPtr<grfx::Device**> ppDevice);
     void   DestroyDevice(const grfx::Device* pDevice);
 
-    Result CreateSurface(const grfx::SurfaceCreateInfo* pCreateInfo, grfx::Surface** ppSurface);
+    Result CreateSurface(const grfx::SurfaceCreateInfo* pCreateInfo, AutoPtr<grfx::Surface**> ppSurface);
     void   DestroySurface(const grfx::Surface* pSurface);
 
 #if defined(PPX_BUILD_XR)
@@ -92,18 +92,18 @@ public:
     virtual void                     XrUpdateDeviceInGraphicsBinding() = 0;
 #endif
 protected:
-    Result CreateGpu(const grfx::internal::GpuCreateInfo* pCreateInfo, grfx::Gpu** ppGpu);
+    Result CreateGpu(const grfx::internal::GpuCreateInfo* pCreateInfo, AutoPtr<grfx::Gpu**> ppGpu);
     void   DestroyGpu(const grfx::Gpu* pGpu);
 
-    virtual Result AllocateObject(grfx::Device** ppDevice)   = 0;
-    virtual Result AllocateObject(grfx::Gpu** ppGpu)         = 0;
-    virtual Result AllocateObject(grfx::Surface** ppSurface) = 0;
+    virtual Result AllocateObject(AutoPtr<grfx::Device**> ppDevice)   = 0;
+    virtual Result AllocateObject(AutoPtr<grfx::Gpu**> ppGpu)         = 0;
+    virtual Result AllocateObject(AutoPtr<grfx::Surface**> ppSurface) = 0;
 
     template <
         typename ObjectT,
         typename CreateInfoT,
         typename ContainerT = std::vector<ObjPtr<ObjectT>>>
-    Result CreateObject(const CreateInfoT* pCreateInfo, ContainerT& container, ObjectT** ppObject);
+    Result CreateObject(const CreateInfoT* pCreateInfo, ContainerT& container, AutoPtr<ObjectT**> ppObject);
 
     template <
         typename ObjectT,
@@ -116,13 +116,13 @@ protected:
 protected:
     virtual Result CreateApiObjects(const grfx::InstanceCreateInfo* pCreateInfo) = 0;
     virtual void   DestroyApiObjects()                                           = 0;
-    friend Result  CreateInstance(const grfx::InstanceCreateInfo* pCreateInfo, grfx::Instance** ppInstance);
+    friend Result  CreateInstance(const grfx::InstanceCreateInfo* pCreateInfo, AutoPtr<grfx::Instance**> ppInstance);
     friend void    DestroyInstance(const grfx::Instance* pInstance);
 
 private:
     virtual Result Create(const grfx::InstanceCreateInfo* pCreateInfo);
     virtual void   Destroy();
-    friend Result  CreateInstance(const grfx::InstanceCreateInfo* pCreateInfo, grfx::Instance** ppInstance);
+    friend Result  CreateInstance(const grfx::InstanceCreateInfo* pCreateInfo, AutoPtr<grfx::Instance**> ppInstance);
     friend void    DestroyInstance(const grfx::Instance* pInstance);
 
 protected:
@@ -132,7 +132,7 @@ protected:
     std::vector<grfx::SurfacePtr> mSurfaces;
 };
 
-Result CreateInstance(const grfx::InstanceCreateInfo* pCreateInfo, grfx::Instance** ppInstance);
+Result CreateInstance(const grfx::InstanceCreateInfo* pCreateInfo, AutoPtr<grfx::Instance**> ppInstance);
 void   DestroyInstance(const grfx::Instance* pInstance);
 
 } // namespace grfx

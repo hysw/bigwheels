@@ -248,7 +248,7 @@ void CommandBuffer::BindIndexBuffer(const grfx::Mesh* pMesh, uint64_t offset)
 
 void CommandBuffer::BindVertexBuffers(
     uint32_t                   bufferCount,
-    const grfx::Buffer* const* buffers,
+    AutoPtr<const grfx::Buffer* const*> buffers,
     const uint32_t*            pStrides,
     const uint64_t*            pOffsets)
 {
@@ -284,7 +284,7 @@ void CommandBuffer::BindVertexBuffers(const grfx::Mesh* pMesh, const uint64_t* p
     BindVertexBuffers(bufferCount, buffers, strides, pOffsets);
 }
 
-void CommandBuffer::Draw(const grfx::FullscreenQuad* pQuad, uint32_t setCount, const grfx::DescriptorSet* const* ppSets)
+void CommandBuffer::Draw(const grfx::FullscreenQuad* pQuad, uint32_t setCount, AutoPtr<const grfx::DescriptorSet* const*> ppSets)
 {
     BindGraphicsDescriptorSets(pQuad->GetPipelineInterface(), setCount, ppSets);
     BindGraphicsPipeline(pQuad->GetPipeline());

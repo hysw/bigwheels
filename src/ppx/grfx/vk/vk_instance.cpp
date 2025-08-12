@@ -479,7 +479,7 @@ void Instance::DestroyApiObjects()
     }
 }
 
-Result Instance::AllocateObject(grfx::Device** ppDevice)
+Result Instance::AllocateObject(AutoPtr<grfx::Device**> ppDevice)
 {
     vk::Device* pObject = new vk::Device();
     if (IsNull(pObject)) {
@@ -489,7 +489,7 @@ Result Instance::AllocateObject(grfx::Device** ppDevice)
     return ppx::SUCCESS;
 }
 
-Result Instance::AllocateObject(grfx::Gpu** ppGpu)
+Result Instance::AllocateObject(AutoPtr<grfx::Gpu**> ppGpu)
 {
     vk::Gpu* pObject = new vk::Gpu();
     if (IsNull(pObject)) {
@@ -499,7 +499,7 @@ Result Instance::AllocateObject(grfx::Gpu** ppGpu)
     return ppx::SUCCESS;
 }
 
-Result Instance::AllocateObject(grfx::Surface** ppSurface)
+Result Instance::AllocateObject(AutoPtr<grfx::Surface**> ppSurface)
 {
     vk::Surface* pObject = new vk::Surface();
     if (IsNull(pObject)) {

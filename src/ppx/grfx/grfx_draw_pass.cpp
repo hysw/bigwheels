@@ -414,7 +414,7 @@ const grfx::Viewport& DrawPass::GetViewport() const
     return mPasses[0].renderPass->GetViewport();
 }
 
-Result DrawPass::GetRenderTargetTexture(uint32_t index, grfx::Texture** ppRenderTarget) const
+Result DrawPass::GetRenderTargetTexture(uint32_t index, AutoPtr<grfx::Texture**> ppRenderTarget) const
 {
     if (index >= mCreateInfo.renderTargetCount) {
         return ppx::ERROR_OUT_OF_RANGE;
@@ -430,7 +430,7 @@ grfx::Texture* DrawPass::GetRenderTargetTexture(uint32_t index) const
     return pTexture;
 }
 
-Result DrawPass::GetDepthStencilTexture(grfx::Texture** ppDepthStencil) const
+Result DrawPass::GetDepthStencilTexture(AutoPtr<grfx::Texture**> ppDepthStencil) const
 {
     if (!HasDepthStencil()) {
         return ppx::ERROR_ELEMENT_NOT_FOUND;

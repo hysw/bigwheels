@@ -196,7 +196,7 @@ Result CopyBitmapToImage(
 Result CreateImageFromBitmap(
     grfx::Queue*        pQueue,
     const Bitmap*       pBitmap,
-    grfx::Image**       ppImage,
+    AutoPtr<grfx::Image**>       ppImage,
     const ImageOptions& options)
 {
     PPX_ASSERT_NULL_ARG(pQueue);
@@ -273,7 +273,7 @@ Result CreateImageFromBitmap(
 Result CreateImageFromBitmapGpu(
     grfx::Queue*        pQueue,
     const Bitmap*       pBitmap,
-    grfx::Image**       ppImage,
+    AutoPtr<grfx::Image**>       ppImage,
     const ImageOptions& options)
 {
     PPX_ASSERT_NULL_ARG(pQueue);
@@ -594,7 +594,7 @@ struct MipLevel
 Result CreateImageFromCompressedImage(
     grfx::Queue*        pQueue,
     const gli::texture& image,
-    grfx::Image**       ppImage,
+    AutoPtr<grfx::Image**>       ppImage,
     const ImageOptions& options)
 {
     Result ppxres;
@@ -795,7 +795,7 @@ Result CreateImageFromCompressedImage(
 Result CreateImageFromFile(
     grfx::Queue*                 pQueue,
     const std::filesystem::path& path,
-    grfx::Image**                ppImage,
+    AutoPtr<grfx::Image**>                ppImage,
     const ImageOptions&          options,
     bool                         useGpu)
 {
@@ -878,7 +878,7 @@ Result CopyBitmapToTexture(
 Result CreateTextureFromBitmap(
     grfx::Queue*          pQueue,
     const Bitmap*         pBitmap,
-    grfx::Texture**       ppTexture,
+    AutoPtr<grfx::Texture**>       ppTexture,
     const TextureOptions& options)
 {
     PPX_ASSERT_NULL_ARG(pQueue);
@@ -965,7 +965,7 @@ Result CreateTextureFromBitmap(
 Result CreateTextureFromMipmap(
     grfx::Queue*          pQueue,
     const Mipmap*         pMipmap,
-    grfx::Texture**       ppTexture,
+    AutoPtr<grfx::Texture**>       ppTexture,
     const TextureOptions& options)
 {
     PPX_ASSERT_NULL_ARG(pQueue);
@@ -1047,7 +1047,7 @@ Result CreateTextureFromMipmap(
 Result CreateTextureFromFile(
     grfx::Queue*                 pQueue,
     const std::filesystem::path& path,
-    grfx::Texture**              ppTexture,
+    AutoPtr<grfx::Texture**>              ppTexture,
     const TextureOptions&        options)
 {
     PPX_ASSERT_NULL_ARG(pQueue);
@@ -1133,8 +1133,8 @@ SubImage CalcSubimageCrossHorizontalLeft(
 Result CreateIBLTexturesFromFile(
     grfx::Queue*                 pQueue,
     const std::filesystem::path& path,
-    grfx::Texture**              ppIrradianceTexture,
-    grfx::Texture**              ppEnvironmentTexture)
+    AutoPtr<grfx::Texture**>              ppIrradianceTexture,
+    AutoPtr<grfx::Texture**>              ppEnvironmentTexture)
 {
     PPX_ASSERT_NULL_ARG(pQueue);
     PPX_ASSERT_NULL_ARG(ppIrradianceTexture);
@@ -1199,7 +1199,7 @@ Result CreateCubeMapFromFile(
     grfx::Queue*                 pQueue,
     const std::filesystem::path& path,
     const CubeMapCreateInfo*     pCreateInfo,
-    grfx::Image**                ppImage,
+    AutoPtr<grfx::Image**>                ppImage,
     const grfx::ImageUsageFlags& additionalImageUsage)
 {
     PPX_ASSERT_NULL_ARG(pQueue);
@@ -1338,7 +1338,7 @@ Result CreateCubeMapFromFile(
 Result CreateMeshFromGeometry(
     grfx::Queue*    pQueue,
     const Geometry* pGeometry,
-    grfx::Mesh**    ppMesh)
+    AutoPtr<grfx::Mesh**>    ppMesh)
 {
     PPX_ASSERT_NULL_ARG(pQueue);
     PPX_ASSERT_NULL_ARG(pGeometry);
@@ -1440,7 +1440,7 @@ Result CreateMeshFromGeometry(
 Result CreateMeshFromTriMesh(
     grfx::Queue*   pQueue,
     const TriMesh* pTriMesh,
-    grfx::Mesh**   ppMesh)
+    AutoPtr<grfx::Mesh**>   ppMesh)
 {
     PPX_ASSERT_NULL_ARG(pQueue);
     PPX_ASSERT_NULL_ARG(pTriMesh);
@@ -1467,7 +1467,7 @@ Result CreateMeshFromTriMesh(
 Result CreateMeshFromWireMesh(
     grfx::Queue*    pQueue,
     const WireMesh* pWireMesh,
-    grfx::Mesh**    ppMesh)
+    AutoPtr<grfx::Mesh**>    ppMesh)
 {
     PPX_ASSERT_NULL_ARG(pQueue);
     PPX_ASSERT_NULL_ARG(pWireMesh);
@@ -1494,7 +1494,7 @@ Result CreateMeshFromWireMesh(
 Result CreateMeshFromFile(
     grfx::Queue*                 pQueue,
     const std::filesystem::path& path,
-    grfx::Mesh**                 ppMesh,
+    AutoPtr<grfx::Mesh**>                 ppMesh,
     const TriMeshOptions&        options)
 {
     PPX_ASSERT_NULL_ARG(pQueue);

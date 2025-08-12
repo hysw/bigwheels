@@ -537,7 +537,7 @@ void RenderPass::Destroy()
     grfx::DeviceObject<grfx::internal::RenderPassCreateInfo>::Destroy();
 }
 
-Result RenderPass::GetRenderTargetView(uint32_t index, grfx::RenderTargetView** ppView) const
+Result RenderPass::GetRenderTargetView(uint32_t index, AutoPtr<grfx::RenderTargetView**> ppView) const
 {
     if (!IsIndexInRange(index, mRenderTargetViews)) {
         return ppx::ERROR_OUT_OF_RANGE;
@@ -546,7 +546,7 @@ Result RenderPass::GetRenderTargetView(uint32_t index, grfx::RenderTargetView** 
     return ppx::SUCCESS;
 }
 
-Result RenderPass::GetDepthStencilView(grfx::DepthStencilView** ppView) const
+Result RenderPass::GetDepthStencilView(AutoPtr<grfx::DepthStencilView**> ppView) const
 {
     if (!mDepthStencilView) {
         return ppx::ERROR_ELEMENT_NOT_FOUND;
@@ -555,7 +555,7 @@ Result RenderPass::GetDepthStencilView(grfx::DepthStencilView** ppView) const
     return ppx::SUCCESS;
 }
 
-Result RenderPass::GetRenderTargetImage(uint32_t index, grfx::Image** ppImage) const
+Result RenderPass::GetRenderTargetImage(uint32_t index, AutoPtr<grfx::Image**> ppImage) const
 {
     if (!IsIndexInRange(index, mRenderTargetImages)) {
         return ppx::ERROR_OUT_OF_RANGE;
@@ -564,7 +564,7 @@ Result RenderPass::GetRenderTargetImage(uint32_t index, grfx::Image** ppImage) c
     return ppx::SUCCESS;
 }
 
-Result RenderPass::GetDepthStencilImage(grfx::Image** ppImage) const
+Result RenderPass::GetDepthStencilImage(AutoPtr<grfx::Image**> ppImage) const
 {
     if (!mDepthStencilImage) {
         return ppx::ERROR_ELEMENT_NOT_FOUND;
@@ -613,7 +613,7 @@ uint32_t RenderPass::GetRenderTargetImageIndex(const grfx::Image* pImage) const
     return index;
 }
 
-Result RenderPass::DisownRenderTargetView(uint32_t index, grfx::RenderTargetView** ppView)
+Result RenderPass::DisownRenderTargetView(uint32_t index, AutoPtr<grfx::RenderTargetView**> ppView)
 {
     if (IsIndexInRange(index, mRenderTargetViews)) {
         return ppx::ERROR_OUT_OF_RANGE;
@@ -630,7 +630,7 @@ Result RenderPass::DisownRenderTargetView(uint32_t index, grfx::RenderTargetView
     return ppx::SUCCESS;
 }
 
-Result RenderPass::DisownDepthStencilView(grfx::DepthStencilView** ppView)
+Result RenderPass::DisownDepthStencilView(AutoPtr<grfx::DepthStencilView**> ppView)
 {
     if (!mDepthStencilView) {
         return ppx::ERROR_ELEMENT_NOT_FOUND;
@@ -647,7 +647,7 @@ Result RenderPass::DisownDepthStencilView(grfx::DepthStencilView** ppView)
     return ppx::SUCCESS;
 }
 
-Result RenderPass::DisownRenderTargetImage(uint32_t index, grfx::Image** ppImage)
+Result RenderPass::DisownRenderTargetImage(uint32_t index, AutoPtr<grfx::Image**> ppImage)
 {
     if (IsIndexInRange(index, mRenderTargetImages)) {
         return ppx::ERROR_OUT_OF_RANGE;
@@ -664,7 +664,7 @@ Result RenderPass::DisownRenderTargetImage(uint32_t index, grfx::Image** ppImage
     return ppx::SUCCESS;
 }
 
-Result RenderPass::DisownDepthStencilImage(grfx::Image** ppImage)
+Result RenderPass::DisownDepthStencilImage(AutoPtr<grfx::Image**> ppImage)
 {
     if (!mDepthStencilImage) {
         return ppx::ERROR_ELEMENT_NOT_FOUND;

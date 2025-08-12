@@ -20,7 +20,7 @@ namespace ppx {
 namespace grfx {
 
 Result Queue::CreateCommandBuffer(
-    grfx::CommandBuffer** ppCommandBuffer,
+    AutoPtr<grfx::CommandBuffer**> ppCommandBuffer,
     uint32_t              resourceDescriptorCount,
     uint32_t              samplerDescriptorCount)
 {

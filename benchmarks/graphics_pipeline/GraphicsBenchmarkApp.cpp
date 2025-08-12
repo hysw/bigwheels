@@ -1750,12 +1750,12 @@ void GraphicsBenchmarkApp::RecordCommandBufferFullscreenQuad(PerFrame& frame, si
     frame.cmd->Draw(3, 1, 0, 0);
 }
 
-void GraphicsBenchmarkApp::SetupShader(const std::filesystem::path& fileName, grfx::ShaderModule** ppShaderModule)
+void GraphicsBenchmarkApp::SetupShader(const std::filesystem::path& fileName, AutoPtr<grfx::ShaderModule**> ppShaderModule)
 {
     SetupShader(kShaderBaseDir, fileName, ppShaderModule);
 }
 
-void GraphicsBenchmarkApp::SetupShader(const char* baseDir, const std::filesystem::path& fileName, grfx::ShaderModule** ppShaderModule)
+void GraphicsBenchmarkApp::SetupShader(const char* baseDir, const std::filesystem::path& fileName, AutoPtr<grfx::ShaderModule**> ppShaderModule)
 {
     std::vector<char> bytecode = LoadShader(baseDir, fileName);
     PPX_ASSERT_MSG(!bytecode.empty(), "shader bytecode load failed for " << kShaderBaseDir << " " << fileName);

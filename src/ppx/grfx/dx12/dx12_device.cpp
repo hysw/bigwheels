@@ -268,7 +268,7 @@ void Device::DestroyApiObjects()
 
     if (mAllocator) {
         mAllocator->Release();
-        mAllocator.Reset();
+        mAllocator = nullptr;
     }
 
     if (mDevice) {
@@ -362,7 +362,7 @@ HRESULT Device::CreateVersionedRootSignatureDeserializer(
     return hr;
 }
 
-Result Device::AllocateObject(grfx::Buffer** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::Buffer**> ppObject)
 {
     dx12::Buffer* pObject = new dx12::Buffer();
     if (IsNull(pObject)) {
@@ -372,7 +372,7 @@ Result Device::AllocateObject(grfx::Buffer** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::CommandBuffer** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::CommandBuffer**> ppObject)
 {
     dx12::CommandBuffer* pObject = new dx12::CommandBuffer();
     if (IsNull(pObject)) {
@@ -382,7 +382,7 @@ Result Device::AllocateObject(grfx::CommandBuffer** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::CommandPool** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::CommandPool**> ppObject)
 {
     dx12::CommandPool* pObject = new dx12::CommandPool();
     if (IsNull(pObject)) {
@@ -392,7 +392,7 @@ Result Device::AllocateObject(grfx::CommandPool** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::ComputePipeline** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::ComputePipeline**> ppObject)
 {
     dx12::ComputePipeline* pObject = new dx12::ComputePipeline();
     if (IsNull(pObject)) {
@@ -402,7 +402,7 @@ Result Device::AllocateObject(grfx::ComputePipeline** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::DepthStencilView** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::DepthStencilView**> ppObject)
 {
     dx12::DepthStencilView* pObject = new dx12::DepthStencilView();
     if (IsNull(pObject)) {
@@ -412,7 +412,7 @@ Result Device::AllocateObject(grfx::DepthStencilView** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::DescriptorPool** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::DescriptorPool**> ppObject)
 {
     dx12::DescriptorPool* pObject = new dx12::DescriptorPool();
     if (IsNull(pObject)) {
@@ -422,7 +422,7 @@ Result Device::AllocateObject(grfx::DescriptorPool** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::DescriptorSet** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::DescriptorSet**> ppObject)
 {
     dx12::DescriptorSet* pObject = new dx12::DescriptorSet();
     if (IsNull(pObject)) {
@@ -432,7 +432,7 @@ Result Device::AllocateObject(grfx::DescriptorSet** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::DescriptorSetLayout** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::DescriptorSetLayout**> ppObject)
 {
     dx12::DescriptorSetLayout* pObject = new dx12::DescriptorSetLayout();
     if (IsNull(pObject)) {
@@ -442,7 +442,7 @@ Result Device::AllocateObject(grfx::DescriptorSetLayout** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::Fence** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::Fence**> ppObject)
 {
     dx12::Fence* pObject = new dx12::Fence();
     if (IsNull(pObject)) {
@@ -452,7 +452,7 @@ Result Device::AllocateObject(grfx::Fence** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::GraphicsPipeline** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::GraphicsPipeline**> ppObject)
 {
     dx12::GraphicsPipeline* pObject = new dx12::GraphicsPipeline();
     if (IsNull(pObject)) {
@@ -462,7 +462,7 @@ Result Device::AllocateObject(grfx::GraphicsPipeline** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::Image** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::Image**> ppObject)
 {
     dx12::Image* pObject = new dx12::Image();
     if (IsNull(pObject)) {
@@ -472,7 +472,7 @@ Result Device::AllocateObject(grfx::Image** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::PipelineInterface** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::PipelineInterface**> ppObject)
 {
     dx12::PipelineInterface* pObject = new dx12::PipelineInterface();
     if (IsNull(pObject)) {
@@ -482,7 +482,7 @@ Result Device::AllocateObject(grfx::PipelineInterface** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::Queue** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::Queue**> ppObject)
 {
     dx12::Queue* pObject = new dx12::Queue();
     if (IsNull(pObject)) {
@@ -492,7 +492,7 @@ Result Device::AllocateObject(grfx::Queue** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::Query** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::Query**> ppObject)
 {
     dx12::Query* pObject = new dx12::Query();
     if (IsNull(pObject)) {
@@ -502,7 +502,7 @@ Result Device::AllocateObject(grfx::Query** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::RenderPass** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::RenderPass**> ppObject)
 {
     dx12::RenderPass* pObject = new dx12::RenderPass();
     if (IsNull(pObject)) {
@@ -512,7 +512,7 @@ Result Device::AllocateObject(grfx::RenderPass** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::RenderTargetView** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::RenderTargetView**> ppObject)
 {
     dx12::RenderTargetView* pObject = new dx12::RenderTargetView();
     if (IsNull(pObject)) {
@@ -522,7 +522,7 @@ Result Device::AllocateObject(grfx::RenderTargetView** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::SampledImageView** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::SampledImageView**> ppObject)
 {
     dx12::SampledImageView* pObject = new dx12::SampledImageView();
     if (IsNull(pObject)) {
@@ -532,7 +532,7 @@ Result Device::AllocateObject(grfx::SampledImageView** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::Sampler** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::Sampler**> ppObject)
 {
     dx12::Sampler* pObject = new dx12::Sampler();
     if (IsNull(pObject)) {
@@ -542,13 +542,13 @@ Result Device::AllocateObject(grfx::Sampler** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::SamplerYcbcrConversion** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::SamplerYcbcrConversion**> ppObject)
 {
     PPX_LOG_ERROR("Attempted to allocate a YCbCr conversion in D3D12, which is not supported.");
     return ppx::ERROR_REQUIRED_FEATURE_UNAVAILABLE;
 }
 
-Result Device::AllocateObject(grfx::Semaphore** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::Semaphore**> ppObject)
 {
     dx12::Semaphore* pObject = new dx12::Semaphore();
     if (IsNull(pObject)) {
@@ -558,7 +558,7 @@ Result Device::AllocateObject(grfx::Semaphore** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::ShaderModule** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::ShaderModule**> ppObject)
 {
     dx12::ShaderModule* pObject = new dx12::ShaderModule();
     if (IsNull(pObject)) {
@@ -568,17 +568,17 @@ Result Device::AllocateObject(grfx::ShaderModule** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::ShaderProgram** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::ShaderProgram**> ppObject)
 {
     return ppx::ERROR_ALLOCATION_FAILED;
 }
-Result Device::AllocateObject(grfx::ShadingRatePattern** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::ShadingRatePattern**> ppObject)
 {
     PPX_ASSERT_MSG(false, "ShadingRatePattern is not yet supported on DX12");
     return ppx::ERROR_ALLOCATION_FAILED;
 }
 
-Result Device::AllocateObject(grfx::StorageImageView** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::StorageImageView**> ppObject)
 {
     dx12::StorageImageView* pObject = new dx12::StorageImageView();
     if (IsNull(pObject)) {
@@ -588,7 +588,7 @@ Result Device::AllocateObject(grfx::StorageImageView** ppObject)
     return ppx::SUCCESS;
 }
 
-Result Device::AllocateObject(grfx::Swapchain** ppObject)
+Result Device::AllocateObject(AutoPtr<grfx::Swapchain**> ppObject)
 {
     dx12::Swapchain* pObject = new dx12::Swapchain();
     if (IsNull(pObject)) {

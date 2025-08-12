@@ -604,7 +604,7 @@ Result Swapchain::AcquireNextImageInternal(
 Result Swapchain::PresentInternal(
     uint32_t                      imageIndex,
     uint32_t                      waitSemaphoreCount,
-    const grfx::Semaphore* const* ppWaitSemaphores)
+    AutoPtr<const grfx::Semaphore* const*> ppWaitSemaphores)
 {
     std::vector<VkSemaphore> semaphores;
     for (uint32_t i = 0; i < waitSemaphoreCount; ++i) {

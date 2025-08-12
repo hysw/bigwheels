@@ -84,7 +84,7 @@ void Buffer::DestroyApiObjects()
 
     if (mAllocation) {
         mAllocation->Release();
-        mAllocation.Reset();
+        mAllocation = nullptr;
     }
 
     mHeapType = InvalidValue<D3D12_HEAP_TYPE>();

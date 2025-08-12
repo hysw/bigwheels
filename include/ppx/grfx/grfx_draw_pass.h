@@ -153,10 +153,10 @@ public:
     const grfx::Viewport& GetViewport() const;
 
     uint32_t       GetRenderTargetCount() const { return mCreateInfo.renderTargetCount; }
-    Result         GetRenderTargetTexture(uint32_t index, grfx::Texture** ppRenderTarget) const;
+    Result         GetRenderTargetTexture(uint32_t index, AutoPtr<grfx::Texture**> ppRenderTarget) const;
     grfx::Texture* GetRenderTargetTexture(uint32_t index) const;
     bool           HasDepthStencil() const { return mDepthStencilTexture ? true : false; }
-    Result         GetDepthStencilTexture(grfx::Texture** ppDepthStencil) const;
+    Result         GetDepthStencilTexture(AutoPtr<grfx::Texture**> ppDepthStencil) const;
     grfx::Texture* GetDepthStencilTexture() const;
 
     void PrepareRenderPassBeginInfo(const grfx::DrawPassClearFlags& clearFlags, grfx::RenderPassBeginInfo* pBeginInfo) const;

@@ -210,11 +210,11 @@ public:
     uint32_t GetRenderTargetCount() const { return mCreateInfo.renderTargetCount; }
     bool     HasDepthStencil() const { return mDepthStencilImage ? true : false; }
 
-    Result GetRenderTargetView(uint32_t index, grfx::RenderTargetView** ppView) const;
-    Result GetDepthStencilView(grfx::DepthStencilView** ppView) const;
+    Result GetRenderTargetView(uint32_t index, AutoPtr<grfx::RenderTargetView**> ppView) const;
+    Result GetDepthStencilView(AutoPtr<grfx::DepthStencilView**> ppView) const;
 
-    Result GetRenderTargetImage(uint32_t index, grfx::Image** ppImage) const;
-    Result GetDepthStencilImage(grfx::Image** ppImage) const;
+    Result GetRenderTargetImage(uint32_t index, AutoPtr<grfx::Image**> ppImage) const;
+    Result GetDepthStencilImage(AutoPtr<grfx::Image**> ppImage) const;
 
     //! This only applies to grfx::RenderPass objects created using grfx::RenderPassCreateInfo2.
     //! These functions will set 'isExternal' to true resulting in these objects NOT getting
@@ -223,10 +223,10 @@ public:
     //! Calling these fuctions on grfx::RenderPass objects created using using grfx::RenderPassCreateInfo
     //! will still return a valid object if the index or DSV object exists.
     //!
-    Result DisownRenderTargetView(uint32_t index, grfx::RenderTargetView** ppView);
-    Result DisownDepthStencilView(grfx::DepthStencilView** ppView);
-    Result DisownRenderTargetImage(uint32_t index, grfx::Image** ppImage);
-    Result DisownDepthStencilImage(grfx::Image** ppImage);
+    Result DisownRenderTargetView(uint32_t index, AutoPtr<grfx::RenderTargetView**> ppView);
+    Result DisownDepthStencilView(AutoPtr<grfx::DepthStencilView**> ppView);
+    Result DisownRenderTargetImage(uint32_t index, AutoPtr<grfx::Image**> ppImage);
+    Result DisownDepthStencilImage(AutoPtr<grfx::Image**> ppImage);
 
     // Convenience functions returns empty ptr if index is out of range or DSV object does not exist.
     grfx::RenderTargetViewPtr GetRenderTargetView(uint32_t index) const;

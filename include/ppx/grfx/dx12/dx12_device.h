@@ -70,31 +70,31 @@ public:
     bool         IndexTypeUint8Supported() const override;
 
 protected:
-    virtual Result AllocateObject(grfx::Buffer** ppObject) override;
-    virtual Result AllocateObject(grfx::CommandBuffer** ppObject) override;
-    virtual Result AllocateObject(grfx::CommandPool** ppObject) override;
-    virtual Result AllocateObject(grfx::ComputePipeline** ppObject) override;
-    virtual Result AllocateObject(grfx::DepthStencilView** ppObject) override;
-    virtual Result AllocateObject(grfx::DescriptorPool** ppObject) override;
-    virtual Result AllocateObject(grfx::DescriptorSet** ppObject) override;
-    virtual Result AllocateObject(grfx::DescriptorSetLayout** ppObject) override;
-    virtual Result AllocateObject(grfx::Fence** ppObject) override;
-    virtual Result AllocateObject(grfx::GraphicsPipeline** ppObject) override;
-    virtual Result AllocateObject(grfx::Image** ppObject) override;
-    virtual Result AllocateObject(grfx::PipelineInterface** ppObject) override;
-    virtual Result AllocateObject(grfx::Queue** ppObject) override;
-    virtual Result AllocateObject(grfx::Query** ppObject) override;
-    virtual Result AllocateObject(grfx::RenderPass** ppObject) override;
-    virtual Result AllocateObject(grfx::RenderTargetView** ppObject) override;
-    virtual Result AllocateObject(grfx::SampledImageView** ppObject) override;
-    virtual Result AllocateObject(grfx::Sampler** ppObject) override;
-    virtual Result AllocateObject(grfx::SamplerYcbcrConversion** ppObject) override;
-    virtual Result AllocateObject(grfx::Semaphore** ppObject) override;
-    virtual Result AllocateObject(grfx::ShaderModule** ppObject) override;
-    virtual Result AllocateObject(grfx::ShaderProgram** ppObject) override;
-    virtual Result AllocateObject(grfx::ShadingRatePattern** ppObject) override;
-    virtual Result AllocateObject(grfx::StorageImageView** ppObject) override;
-    virtual Result AllocateObject(grfx::Swapchain** ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::Buffer**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::CommandBuffer**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::CommandPool**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::ComputePipeline**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::DepthStencilView**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::DescriptorPool**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::DescriptorSet**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::DescriptorSetLayout**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::Fence**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::GraphicsPipeline**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::Image**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::PipelineInterface**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::Queue**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::Query**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::RenderPass**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::RenderTargetView**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::SampledImageView**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::Sampler**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::SamplerYcbcrConversion**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::Semaphore**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::ShaderModule**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::ShaderProgram**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::ShadingRatePattern**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::StorageImageView**> ppObject) override;
+    virtual Result AllocateObject(AutoPtr<grfx::Swapchain**> ppObject) override;
 
 protected:
     virtual Result CreateApiObjects(const grfx::DeviceCreateInfo* pCreateInfo) override;
@@ -105,8 +105,8 @@ private:
     Result CreateQueues(const grfx::DeviceCreateInfo* pCreateInfo);
 
 private:
-    D3D12DevicePtr             mDevice;
-    ObjPtr<D3D12MA::Allocator> mAllocator;
+    D3D12DevicePtr      mDevice;
+    D3D12MA::Allocator* mAllocator;
 
     UINT                          mHandleIncrementSizeCBVSRVUAV = 0;
     UINT                          mHandleIncrementSizeSampler   = 0;

@@ -661,7 +661,7 @@ void CommandBuffer::SetComputePipelineInterface(const grfx::PipelineInterface* p
 void CommandBuffer::BindDescriptorSets(
     const grfx::PipelineInterface*    pInterface,
     uint32_t                          setCount,
-    const grfx::DescriptorSet* const* ppSets,
+    AutoPtr<const grfx::DescriptorSet* const*> ppSets,
     size_t&                           rdtCountCBVSRVUAV,
     size_t&                           rdtCountSampler)
 {
@@ -749,7 +749,7 @@ void CommandBuffer::BindDescriptorSets(
 void CommandBuffer::BindGraphicsDescriptorSets(
     const grfx::PipelineInterface*    pInterface,
     uint32_t                          setCount,
-    const grfx::DescriptorSet* const* ppSets)
+    AutoPtr<const grfx::DescriptorSet* const*> ppSets)
 {
     // Set root signature
     SetGraphicsPipelineInterface(pInterface);
@@ -800,7 +800,7 @@ void CommandBuffer::BindGraphicsPipeline(const grfx::GraphicsPipeline* pPipeline
 void CommandBuffer::BindComputeDescriptorSets(
     const grfx::PipelineInterface*    pInterface,
     uint32_t                          setCount,
-    const grfx::DescriptorSet* const* ppSets)
+    AutoPtr<const grfx::DescriptorSet* const*> ppSets)
 {
     // Set root signature
     SetComputePipelineInterface(pInterface);

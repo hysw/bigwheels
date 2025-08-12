@@ -79,17 +79,17 @@ public:
     bool       IsFloor() const { return Kind() == EntityKind::FLOOR; }
     bool       IsObject() const { return Kind() == EntityKind::OBJECT; }
 
-    grfx::DescriptorSet**        DescriptorSetPtr() { return &descriptorSet; }
+    AutoPtr<grfx::DescriptorSet**>        DescriptorSetPtr() { return &descriptorSet; }
     const grfx::DescriptorSetPtr DescriptorSet() const { return descriptorSet; }
 
     const grfx::GraphicsPipelinePtr Pipeline() const { return pipeline; }
-    grfx::GraphicsPipeline**        PipelinePtr() { return &pipeline; }
+    AutoPtr<grfx::GraphicsPipeline**>        PipelinePtr() { return &pipeline; }
 
     const grfx::MeshPtr& Mesh() const { return mesh; }
-    grfx::Mesh**         MeshPtr() { return &mesh; }
+    AutoPtr<grfx::Mesh**>         MeshPtr() { return &mesh; }
 
     const grfx::BufferPtr& UniformBuffer() const { return uniformBuffer; }
-    grfx::Buffer**         UniformBufferPtr() { return &uniformBuffer; }
+    AutoPtr<grfx::Buffer**>         UniformBufferPtr() { return &uniformBuffer; }
 
     const float3& Location() const { return location; }
 

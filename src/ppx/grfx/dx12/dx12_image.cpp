@@ -130,7 +130,7 @@ void Image::DestroyApiObjects()
 
     if (mAllocation) {
         mAllocation->Release();
-        mAllocation.Reset();
+        mAllocation = nullptr;
     }
 }
 
