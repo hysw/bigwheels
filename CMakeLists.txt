@@ -17,6 +17,8 @@ cmake_policy(SET CMP0054 NEW)
 
 project(BigWheels)
 
+set(ENV{VULKAN_SDK} "C:\\VulkanSDK\\1.4.321.1")
+
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
     message(FATAL_ERROR "In-source builds are not allowed.")
 endif()

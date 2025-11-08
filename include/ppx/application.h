@@ -96,6 +96,7 @@ struct StandardOptions
     std::shared_ptr<KnobFlag<std::vector<std::string>>> pConfigJsonPaths;
 
     std::shared_ptr<KnobFlag<std::string>> pShadingRateMode;
+    std::shared_ptr<KnobFlag<bool>> pProtectedSwapchain;
 };
 
 // -------------------------------------------------------------------------------------------------
@@ -158,6 +159,8 @@ struct ApplicationSettings
             uint32_t computeQueueCount  = 0;
             uint32_t transferQueueCount = 0;
 
+            bool protectedMemory = false;
+
             // Enable support for this shading rate mode on the device.
             // The application must not use FDM or VRS without setting this to
             // the corresponding shading rate mode.
@@ -204,6 +207,7 @@ struct ApplicationSettings
         std::string              screenshotPath        = "screenshot_frame_#.ppm";
         int                      statsFrameWindow      = -1;
         bool                     useSoftwareRenderer   = false;
+        bool                     protectedSwapchain    = false;
 #if defined(PPX_BUILD_XR)
         std::pair<int, int>      xrUiResolution       = std::make_pair(0, 0);
         std::vector<std::string> xrRequiredExtensions = {};
@@ -258,7 +262,7 @@ protected:
     virtual void DispatchRender();
     virtual void DispatchInitKnobs();
     virtual void DispatchUpdateMetrics();
-    virtual void DrawGui(){}; // Draw additional project-related information to ImGui.
+    virtual void DrawGui() {}; // Draw additional project-related information to ImGui.
 
     // Override these methods in a derived class to change the default behavior of metrics.
     // Virtual for unit testing purposes.

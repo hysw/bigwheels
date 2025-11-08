@@ -72,6 +72,9 @@ Result Device::ConfigureQueueInfo(const grfx::DeviceCreateInfo* pCreateInfo, std
         // Graphics
         if (mGraphicsQueueFamilyIndex != PPX_VALUE_IGNORED && pCreateInfo->graphicsQueueCount > 0) {
             VkDeviceQueueCreateInfo vkci = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
+            if (pCreateInfo->protectedQueue) {
+                vkci.flags = VK_DEVICE_QUEUE_CREATE_PROTECTED_BIT;
+            }
             vkci.queueFamilyIndex        = mGraphicsQueueFamilyIndex;
             vkci.queueCount              = pCreateInfo->graphicsQueueCount;
             vkci.pQueuePriorities        = DataPtr(queuePriorities);

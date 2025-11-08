@@ -695,6 +695,9 @@ void Application::InitStandardKnobs()
     mStandardOpts.pShadingRateMode->SetValidator([](const std::string& res) {
         return res == "" || res == "none" || res == "fdm" || res == "vrs";
     });
+
+    GetKnobManager().InitKnob(&mStandardOpts.pProtectedSwapchain, "protected-swapchain", mSettings.standardKnobsDefaultValue.protectedSwapchain);
+    mStandardOpts.pProtectedSwapchain->SetFlagDescription("Use protected swapchain.");
 }
 
 void Application::SaveImage(grfx::ImagePtr image, const std::string& filepath, grfx::ResourceState resourceState) const
